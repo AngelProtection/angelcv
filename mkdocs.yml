@@ -6,8 +6,8 @@ theme:
   font:
     text: Roboto
     code: Red Hat Mono
-  # logo: assets/logo.png
-  # favicon: assets/favicon.ico
+  logo: assets/Angel-Protection-Icon-RGB.svg
+  favicon: assets/favicon.png
   features:
     - navigation.footer
 
