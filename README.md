@@ -1,0 +1,83 @@
+# AngelCV
+
+**AngelCV is an open-source, commercially-friendly computer vision library designed for ease of use, power, and extensibility.**
+
+AngelCV is a project by **Angel Protection System**, a leading company dedicated to providing tech-driven security solutions to safeguard communities, specializing in advanced video surveillance, access control, integrated systems, and comprehensive security assessments. ([www.angelprotection.com](https://angelprotection.com/))
+
+Our mission is to provide cutting-edge deep learning models and tools that you can seamlessly integrate into your projects, whether for research, personal use, or commercial applications. All our code and pre-trained models are under the **Apache 2.0 License**, giving you the freedom to innovate without restrictive licensing.
+
+*A note on our open-source commitment: AngelCV was initially developed to meet the advanced computer vision needs of Angel Protection System. We are excited to share it with the open-source community to foster innovation and allow everyone to benefit from and contribute to its development.*
+
+## ✨ Why AngelCV?
+
+*   **Open & Free for Commercial Use**: Build your next big thing without worrying about licensing fees or restrictions. Our Apache 2.0 license covers both the library and our provided pre-trained models.
+*   **State-of-the-Art Models**: We start with robust implementations like YOLOv10 for object detection and plan to expand to other vision tasks (classification, segmentation, oriented bounding boxes) and model architectures.
+*   **Developer-Friendly Interface**: A clean, intuitive API (see `ObjectDetectionModel` and `InferenceResult`) makes common tasks like training, inference, and evaluation straightforward.
+*   **Flexible Configuration**: Easily customize model architectures, training parameters, and datasets using YAML-based configuration files.
+*   **Community Driven (Future)**: We aim to build a community around AngelCV.
+
+## 🚀 Getting Started
+
+### Installation
+
+AngelCV will be available on PyPI. You can install it using pip:
+
+```bash
+pip install angelcv
+```
+
+Make sure you have PyTorch installed, as it's a primary dependency. You can find PyTorch installation instructions at [pytorch.org](https://pytorch.org/).
+
+### Quick Start: Object Detection
+
+Here's a simple example of how to load a pre-trained YOLOv10 model and perform inference on an image:
+
+```python
+from angelcv import ObjectDetectionModel
+
+# Load a pre-trained YOLOv10n model (will download if not found locally)
+# You can also specify a path to a local .pt or .ckpt file,
+# or a .yaml configuration file to initialize a new model.
+model = ObjectDetectionModel("yolov10n.pt")
+
+# Perform inference on an image
+# Source can be a file path, URL, PIL image, torch.Tensor, or numpy array.
+results = model.predict("path/to/your/image.jpg")
+
+# Process and display results
+for result in results:
+    print(f"Found {len(result.boxes.xyxy)} objects.")
+    # Access bounding boxes (various formats available, e.g., result.boxes.xyxy_norm)
+    # Access confidences: result.boxes.confidences
+    # Access class IDs: result.boxes.class_label_ids
+    # Access class labels (if available): result.boxes.labels
+
+    # Show the annotated image
+    result.show()
+
+    # Save the annotated image
+    result.save("output_image.jpg")
+```
+
+## 📚 Dive Deeper
+
+For more detailed information, check out our documentation:
+
+*   **[Getting Started](./docs/getting_started.md)**: Your first stop for installation and a quick tour.
+*   **[Object Detection](./docs/object_detection.md)**: Learn about our object detection capabilities, focusing on YOLOv10.
+*   **[Configuration](./docs/configuration.md)**: Understand how to use and customize model, training, and dataset configurations.
+*   **[API Interfaces](./docs/interfaces.md)**: Explore the main Python classes you'll interact with.
+
+## 🤝 Contributing
+
+Interested in contributing? We welcome contributions of all kinds, from bug fixes to new features. (TODO: Link to contribution guidelines when ready).
+
+## 🛠️ Development and Support
+
+The primary developer and maintainer of AngelCV is [Iu Ayala](https://github.com/IuAyala) from [**Gradient Insight**](https://gradientinsight.com). Gradient Insight creates bespoke computer vision solutions tailored to unique business needs. 
+
+AngelCV is a testament to the innovative solutions developed at Angel Protection System and Gradient Insight. We encourage the community to use, improve, and contribute to this project. For specific inquiries or bespoke solutions, feel free to reach out to the respective organizations.
+
+## 📄 License
+
+AngelCV is licensed under the **Apache 2.0 License**. See the `LICENSE` file for more details.
