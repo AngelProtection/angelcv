@@ -18,8 +18,6 @@ AngelCV will be available on PyPI. You can install it using pip:
 pip install angelcv
 ```
 
-Make sure you have PyTorch installed, as it's a primary dependency. You can find PyTorch installation instructions at [pytorch.org](https://pytorch.org/).
-
 ## Quick Start: Object Detection
 
 Here's a simple example of how to load a pre-trained YOLOv10 model and perform inference on an image:
