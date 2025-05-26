@@ -1,5 +1,5 @@
 site_name: AngelCV
-site_url: https://sitename.example
+site_url: https://sitename.example # TODO[LOW]: fix this URL once we have a domain
 theme:
   name: material
 
