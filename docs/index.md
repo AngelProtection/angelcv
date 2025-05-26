@@ -2,6 +2,8 @@
 
 **AngelCV is an open-source, commercially-friendly computer vision library designed for ease of use, power, and extensibility.**
 
+AngelCV is a project initiated by **Angel Protection System** ([www.angelprotection.com](https://angelprotection.com/)), a leader in tech-driven security solutions.
+
 Our mission is to provide cutting-edge deep learning models and tools that you can seamlessly integrate into your projects, whether for research, personal use, or commercial applications. All our code and pre-trained models are under the **Apache 2.0 License**, giving you the freedom to innovate without restrictive licensing.
 
 ## Why AngelCV?
@@ -46,3 +48,9 @@ If you plan to contribute or explore the codebase:
 
 
 We are excited to see what you build with AngelCV!
+
+## Development && Support
+
+The primary developer and maintainer of AngelCV is [Iu Ayala](https://github.com/IuAyala) from [**Gradient Insight**](https://gradientinsight.com). Gradient Insight creates bespoke computer vision solutions tailored to unique business needs. 
+
+AngelCV is a testament to the innovative solutions developed at Angel Protection System and Gradient Insight. We encourage the community to use, improve, and contribute to this project. For specific inquiries or bespoke solutions, feel free to reach out to the respective organizations.
