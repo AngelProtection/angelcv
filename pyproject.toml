@@ -1,0 +1,115 @@
+# ------------------------ BUILD SYSTEM ------------------------
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["angelcv","angelcv*"]
+
+[tool.setuptools.package-data]
+"angelcv" = ["**/*.yaml"]
+# NOTE: might need to add tests and assets in the future
+
+# ------------------------ PROJECT METADATA ------------------------
+[project]
+name = "AngelCV"
+version = "0.1.0"
+description = "AngelCV train and inference for Computer Vision models made easy."
+readme = "README.md"
+requires-python = ">=3.9,<3.13" # torchvision no 3.13 yet
+license = { file = "LICENSE" }
+keywords = ["computer-vision", "deep-learning", "machine-learning", "AI", "ML", "DL", "YOLO", "YOLOv10", "AngelCV"]
+authors = [
+    { name = "Iu Ayala", email = "iu.ayala@gradientinsight.com" }
+]
+maintainers = [
+  { name = "Iu Ayala", email = "iu.ayala@gradientinsight.com" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: OS Independent",
+]
+
+# ------------------------ DEPENDENCIES ------------------------
+dependencies = [
+    "albumentations>=2.0.4",
+    "boto3>=1.37.3",
+    "einops>=0.8.1",
+    "lightning>=2.5.0.post0",
+    "matplotlib>=3.9.4",
+    "numpy>=2.0.2",
+    "omegaconf>=2.3.0",
+    "onnx>=1.17.0",
+    "opencv-python>=4.11.0.86",
+    "pandas>=2.2.3",
+    "pillow>=11.1.0",
+    "psutil>=7.0.0",
+    "py-cpuinfo>=9.0.0",
+    "pycocotools>=2.0.8",
+    "pyqt5>=5.15.11", # for matplotlib backend
+    "pyyaml>=6.0.2",
+    "requests>=2.32.3",
+    "rich>=13.9.4",
+    "scipy>=1.13.1",
+    "seaborn>=0.13.2",
+    "tensorboard>=2.19.0",
+    "torch>=2.6.0",
+    "torchvision>=0.21.0",
+    "tqdm>=4.67.1",
+]
+
+# Optional dependencies
+[dependency-groups]
+dev = [
+    "mkdocs-material>=9.6.14",
+]
+
+# ------------------------ TOOLS ------------------------
+[tool.ruff]
+line-length = 120
+indent-width = 4
+show-fixes = true
+respect-gitignore = true
+# target-version = "py312"
+
+[tool.ruff.lint]
+# "E" → Pyflakes errors
+# "F" → Pycodestyle errors
+# "I" → isort (import sorting)
+# "N" → PEP8 naming conventions
+# "UP" → pyupgrade (automated Python version upgrades)
+# "B" → flake8-bugbear (common bugs and code smells)
+# "S" → bandit (security issues)
+select = ["E", "F", "I", "N", "UP", "B", "S"]
+ignore = ["N812", "F401", "S101"]
+# "N812" → imported as non-lowercase
+# "F401" → unused import
+# "S101" → use assert
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint.isort]
+known-first-party = ["AngelCV"]
+force-sort-within-sections = true

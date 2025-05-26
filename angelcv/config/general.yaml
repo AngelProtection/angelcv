@@ -1,0 +1,66 @@
+# NOTE: those are imported and set by the configuration system
+# model: model/yolov10n.yaml
+# dataset: dataset/coco.yaml
+# task: task/inference.yaml
+
+# ---------------- GENERAL ----------------
+
+image_size: 640
+num_workers: 8
+
+# ---------------- TRAINING ----------------
+
+train:
+  max_epochs: 500
+  patience: 20
+
+  data:
+    batch_size: 16
+    image_size: ${image_size}
+    num_workers: ${num_workers}
+    shuffle: True
+    # TODO [MID]: add data augmentations
+
+  loss:
+    weights:
+      cls_loss: 0.5
+      iou_loss: 7.5
+      df_loss: 1.5
+    matcher:
+      iou: CIoU # currently unused
+      tal_topk: 10
+      tal_alpha: 0.5 # iou
+      tal_beta: 6.0 # cls
+
+  optimizer:
+    type: AdamW # currently unused
+    args:
+      max_lr: 0.01
+      weight_decay: 0.00005
+      momentum: 0.937
+
+  scheduler:
+    type: LinearLR # currently unused
+    warmup_epochs: 3
+    args:
+      start_factor: 0.0
+      warmup_factor: 1.0
+      end_factor: 0.01
+
+# ---------------- VALIDATION ----------------
+
+validation:
+  data:
+    batch_size: ${train.data.batch_size}
+    image_size: ${image_size}
+    num_workers: ${num_workers}
+    shuffle: False
+
+# ---------------- TESTING ----------------
+
+test:
+  data:
+    batch_size: ${train.data.batch_size}
+    image_size: ${image_size}
+    num_workers: ${num_workers}
+    shuffle: False

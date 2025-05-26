@@ -1,0 +1,15 @@
+name: example # optional
+task: detection # optional
+
+path: /path/to/dataset # dataset root directory
+train: train_folder # relative path to the dataset root
+val: val_folder # relative path to the dataset root
+test: test_folder # relative path to the dataset root
+
+# Class names
+names:
+  0: person
+  1: car
+
+pin_memory: true # optional
+

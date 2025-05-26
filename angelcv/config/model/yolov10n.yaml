@@ -1,0 +1,69 @@
+name: yolov10n
+
+repeats_scale: 0.333
+channels_scale: 0.25
+max_channels: 1024
+
+architecture:
+  backbone:
+    - Conv2dNormAct: # 0 (ts 2)
+        args: { out_channels: 64, kernel_size: 3, stride: 2, in_channels: 3 }
+    - Conv2dNormAct: # 1 (ts 4)
+        args: { out_channels: 128, kernel_size: 3, stride: 2 }
+    - C2f: # 2 (ts 4)
+        args: { out_channels: 128, use_residual: True, repeats: 3 }
+    - Conv2dNormAct: # 3 (ts 8)
+        args: { out_channels: 256, kernel_size: 3, stride: 2 }
+    - C2f: # 4 (ts 8)
+        args: { out_channels: 256, use_residual: True, repeats: 6 }
+    - SCDown: # 5 (ts 16)
+        args: { out_channels: 512, kernel_size: 3, stride: 2 }
+    - C2f: # 6 (ts 16)
+        args: { out_channels: 512, use_residual: True, repeats: 6 }
+    - SCDown: # 7 (ts 16)
+        args: { out_channels: 1024, kernel_size: 3, stride: 2 }
+    - C2f: # 8 (ts 32)
+        args: { out_channels: 1024, use_residual: True, repeats: 3 }
+
+  neck:
+    - SPPF: # 9 (ts 32)
+        args: { out_channels: 1024, kernel_size: 5 }
+    - PSA: # 10 (ts 32)
+        args: { out_channels: 1024 }
+
+    - nn.Upsample: # 11 (ts 16)
+        args: { scale_factor: 2, mode: "nearest" }
+    - Concat: # 12 (ts 16)
+        args: { dim: 1 }
+        source: [-1, 6]
+    - C2f: # 13
+        args: { out_channels: 512, repeats: 3 }
+
+    - nn.Upsample: # 14 (ts 8)
+        args: { scale_factor: 2, mode: "nearest" }
+    - Concat: # 15 (ts 8)
+        args: { dim: 1 }
+        source: [-1, 4]
+    - C2f: # 16 (ts 8)
+        args: { out_channels: 256, repeats: 3 }
+
+    - Conv2dNormAct: # 17 (ts 16)
+        args: { out_channels: 256, kernel_size: 3, stride: 2 }
+    - Concat: # 18 (ts 16)
+        args: { dim: 1 }
+        source: [-1, 13]
+    - C2f: # 19 (ts 16)
+        args: { out_channels: 512, repeats: 3 }
+
+    - SCDown: # 20 (ts 32)
+        args: { out_channels: 512, kernel_size: 3, stride: 2 }
+    - Concat: # 21 (ts 32)
+        args: { dim: 1 }
+        source: [-1, 10]
+    - C2fCIB: # 22 (ts 32)
+        args: { out_channels: 1024, use_residual: True, use_local_key: True, repeats: 3 }
+
+  head:
+    - v10Detect: # 23
+        args: { num_classes: 80, num_dfl_bins: 16, feature_map_strides: [8, 16, 32] }
+        source: [16, 19, -1]

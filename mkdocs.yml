@@ -1,0 +1,68 @@
+site_name: AngelCV
+site_url: https://sitename.example
+theme:
+  name: material
+
+  font:
+    text: Roboto
+    code: Red Hat Mono
+  # logo: assets/logo.png
+  # favicon: assets/favicon.ico
+  features:
+    - navigation.footer
+
+  palette:
+    # Dark Mode
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Dark mode
+      primary: indigo
+      accent: deep purple
+
+    # Light Mode
+    - scheme: default
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+      primary: indigo
+      accent: deep purple
+
+nav:
+  - Home: index.md
+  - Getting Started: getting_started.md
+  - Object Detection: object_detection.md
+  - Configuration: configuration.md
+  - API Interfaces: interfaces.md
+
+markdown_extensions:
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+
+extra:
+  social:
+    - icon: material/web
+      link: https://angelprotection.com
+    - icon: fontawesome/brands/github
+      link: https://github.com/AngelProtection/AngelCV # TODO[LOW]: make sure it's correct
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/company/angel-protection-system
+
+copyright: Copyright &copy; 2025 Angel Protection System
