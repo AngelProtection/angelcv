@@ -260,17 +260,16 @@ class ObjectDetectionModel:
         datamodule = self._setup_datamodule(dataset)
 
         # Setup training callbacks
-        date_str = self._get_date_str()
-        checkpoint_dir = Path("checkpoints") / date_str
+        experiment_dir = self._setup_experiment_directory()
 
         train_callbacks = [
             ModelCheckpoint(
-                dirpath=checkpoint_dir,
+                dirpath=experiment_dir / "checkpoints",
                 filename="model-{epoch:03d}-{val_loss:.2f}",
                 monitor="val_loss",
                 save_top_k=3,
                 save_last=True,
-                auto_insert_metric_name=False,
+                auto_insert_metric_name=True,
             ),
             LearningRateMonitor(logging_interval="step"),
             DeviceStatsMonitor(),
@@ -286,10 +285,7 @@ class ObjectDetectionModel:
         kwargs["callbacks"] = train_callbacks
 
         # Setup logger
-        tb_logger = TensorBoardLogger(
-            save_dir="tb_logs",
-            name=date_str,
-        )
+        tb_logger = TensorBoardLogger(save_dir=experiment_dir, name="tb_logs")
 
         # Create trainer
         trainer_kwargs = {
@@ -309,7 +305,7 @@ class ObjectDetectionModel:
         self.training_results = {
             "epochs_completed": trainer.current_epoch,
             "global_step": trainer.global_step,
-            "checkpoint_dir": str(checkpoint_dir),
+            "experiment_dir": str(experiment_dir),
             "best_model_path": trainer.checkpoint_callback.best_model_path
             if hasattr(trainer, "checkpoint_callback")
             else None,
@@ -350,9 +346,22 @@ class ObjectDetectionModel:
 
         return datamodule
 
-    def _get_date_str(self) -> str:
-        """Returns a date string for naming directories and files."""
-        return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    def _setup_experiment_directory(self) -> Path:
+        """
+        Creates and returns a single experiment directory.
+        """
+        timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        # Create main experiment directory
+        experiment_dir = Path("experiments") / timestamp_str
+        experiment_dir.mkdir(parents=True, exist_ok=True)
+
+        # Pass it to nested model
+        self.model.experiment_dir = experiment_dir
+
+        logger.info(f"Created experiment directory: {experiment_dir}")
+
+        return experiment_dir
 
     def test(
         self,
@@ -417,6 +426,7 @@ class ObjectDetectionModel:
         kwargs["callbacks"] = test_callbacks
 
         # Setup logger
+        # TODO [MID]: do it in a similar way that it's done in train(...)
         date_str = self._get_date_str()
         tb_logger = TensorBoardLogger(save_dir="tb_logs", name=f"test_{date_str}")
 
