@@ -13,11 +13,13 @@ from torchmetrics.detection.mean_ap import MeanAveragePrecision
 
 from angelcv.config import ConfigManager
 from angelcv.config.config_registry import BlockConfig, Config
+from angelcv.interface.inference_result import InferenceResult
 from angelcv.model.blocks import v10Detect
 from angelcv.tools.loss import DetectionLoss, EndToEndDetectionLoss
 from angelcv.utils.block_utils import get_block_name_to_impl_dict
 from angelcv.utils.logger import logger
 from angelcv.utils.ops_utils import round_to_multiple
+from angelcv.utils.source_utils import ImageCoordinateMapper
 
 
 class YoloDetectionModel(pl.LightningModule):
@@ -30,6 +32,7 @@ class YoloDetectionModel(pl.LightningModule):
     3. Automatic stride calculation for feature pyramids
     4. Proper weight initialization for optimal training
     5. Full PyTorch Lightning integration for training
+    6. Visualization of detections during training and validation
 
     The model follows the YOLOv10 architecture while maintaining flexibility
     for different configurations and use cases.
@@ -74,6 +77,12 @@ class YoloDetectionModel(pl.LightningModule):
             "train_loss_clf": deque(maxlen=20),
             "train_loss_dlf": deque(maxlen=20),
         }
+
+        # Visualization settings
+        self.vis_batch_indices = []
+        self.vis_interval = 10  # Save visualizations every N epochs
+        self.vis_samples_per_batch = 4  # Number of samples to visualize per batch
+        self.vis_confidence_threshold = 0.3  # Minimum confidence for displaying detections
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         """
@@ -275,6 +284,10 @@ class YoloDetectionModel(pl.LightningModule):
 
         # Update mAP metric
         self.map_metric.update(formatted_predictions, formatted_targets)
+
+        # Save visualization samples for the validation set
+        if batch_idx == 0 and (self.current_epoch % self.vis_interval == 0 or self.current_epoch == 0):
+            self._save_detection_visualizations(batch, preds_feats_dict)
 
         return {
             "loss": detection_loss.total,
@@ -508,6 +521,85 @@ class YoloDetectionModel(pl.LightningModule):
         self.loss_fn = None
 
         logger.info(f"Successfully updated model for {num_classes} classes")
+
+    def _save_detection_visualizations(
+        self, batch: dict[str, torch.Tensor], predictions: dict[str, torch.Tensor]
+    ) -> None:
+        """
+        Save visualization of detection results during training or validation.
+
+        Args:
+            batch: Dictionary containing images and ground truth
+            predictions: Dictionary containing model predictions
+        """
+        if not hasattr(self, "experiment_dir"):
+            logger.warning("Experiment directory not set. Skipping visualization.")
+
+        # Create output directory if it doesn't exist
+        output_dir = self.experiment_dir / "visualizations" / f"epoch_{self.current_epoch:04d}"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Determine which samples to visualize
+        batch_size = batch["images"].shape[0]
+
+        # Initialize or update visualization sample indices
+        if not self.vis_batch_indices:
+            self.vis_batch_indices = list(range(min(batch_size, self.vis_samples_per_batch)))
+
+        # Get class labels from the config if available
+        class_labels = getattr(self.config.dataset, "names", None)
+
+        # Process each selected sample
+        for idx in self.vis_batch_indices:
+            if idx >= batch_size:
+                continue
+
+            # Get the image and its predictions
+            image = batch["images"][idx].cpu().permute(1, 2, 0).numpy()  # HWC format
+            image = (image * 255).astype(np.uint8)
+
+            # Get predictions for this image
+            image_preds = predictions["predictions"][idx]
+
+            # Create coordinate mapper - assumes input image has been resized/padded
+            h, w = image.shape[:2]
+            img_mapper = ImageCoordinateMapper(
+                original_width=w,
+                original_height=h,
+                transformed_width=w,
+                transformed_height=h,
+                scale_x=1.0,
+                scale_y=1.0,
+                padding_x=0,
+                padding_y=0,
+            )
+
+            # Create inference result object
+            result = InferenceResult(
+                model_output=image_preds,
+                original_image=image,
+                confidence_th=self.vis_confidence_threshold,
+                img_coordinate_mapper=img_mapper,
+                class_labels=class_labels,
+            )
+
+            # Save the annotated image
+            output_path = output_dir / f"sample_{idx:02d}.jpg"
+            result.save(output_path)
+
+            # Log the image to TensorBoard if available
+            if hasattr(self.logger, "experiment") and hasattr(self.logger.experiment, "add_image"):
+                try:
+                    # Convert back to tensor for TensorBoard (CHW format)
+                    annotated_img = result.annotate_image()
+                    annotated_tensor = torch.from_numpy(annotated_img).permute(2, 0, 1) / 255.0
+
+                    # Add to TensorBoard
+                    self.logger.experiment.add_image(
+                        f"{self.current_stage}/detections/epoch={self.current_epoch}_sample={idx:02d}", annotated_tensor
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to log image to TensorBoard: {e}")
 
 
 def model_arch_from_config(config: Config) -> tuple[nn.ModuleList, list[int]]:
