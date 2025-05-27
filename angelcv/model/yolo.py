@@ -55,6 +55,7 @@ class YoloDetectionModel(pl.LightningModule):
 
         self.config = config
         self.loss_fn = None
+        self.experiment_dir = None
 
         # Build model architecture
         # NOTE: self.config element are modified (i.e. out_channels scaled by channels_scale)
@@ -532,8 +533,9 @@ class YoloDetectionModel(pl.LightningModule):
             batch: Dictionary containing images and ground truth
             predictions: Dictionary containing model predictions
         """
-        if not hasattr(self, "experiment_dir"):
+        if not self.experiment_dir:
             logger.warning("Experiment directory not set. Skipping visualization.")
+            return
 
         # Create output directory if it doesn't exist
         output_dir = self.experiment_dir / "visualizations" / f"epoch_{self.current_epoch:04d}"
