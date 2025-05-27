@@ -266,7 +266,7 @@ class ObjectDetectionModel:
         train_callbacks = [
             ModelCheckpoint(
                 dirpath=checkpoint_dir,
-                filename="model-{epoch:03d}-{step:06d}-{val_loss:.2f}",
+                filename="model-{epoch:03d}-{val_loss:.2f}",
                 monitor="val_loss",
                 save_top_k=3,
                 save_last=True,
