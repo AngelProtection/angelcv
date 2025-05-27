@@ -1,5 +1,6 @@
 # ------------------- OUTPUTS -------------------
 # Logs and outputs
+experiments/
 lightning_logs/
 tb_logs/
 checkpoints/
