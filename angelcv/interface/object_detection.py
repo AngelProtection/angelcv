@@ -15,6 +15,7 @@ from lightning.pytorch.callbacks import (
 from lightning.pytorch.loggers import TensorBoardLogger
 import numpy as np
 import torch
+import yaml
 
 from angelcv.config import ConfigManager
 from angelcv.dataset.coco_datamodule import CocoDataModule
@@ -293,6 +294,14 @@ class ObjectDetectionModel:
             "deterministic": False,
             **kwargs,  # All the Trainer arguments, that come from function arguments
         }
+
+        # Save confg to experiment directory
+        with open(experiment_dir / "config.yaml", "w") as f:
+            yaml.dump(self.model.config.model_dump(), f)
+
+        with open(experiment_dir / "trainer_kwargs.yaml", "w") as f:
+            yaml.dump(trainer_kwargs, f)
+
         trainer = L.Trainer(**trainer_kwargs)
         # TODO [MID]: think how to prune the model after training (make them smaller)
 
