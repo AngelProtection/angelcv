@@ -73,7 +73,7 @@ class VersionBumper:
             major, minor, patch = map(int, parts)
             return major, minor, patch
         except (ValueError, TypeError) as e:
-            console.print(f"❌ Invalid version format: {version_str}", style="red")
+            console.print(f"❌ Invalid version format: {version_str}, - error: {e}", style="red")
             console.print("Expected format: v1.2.3 or 1.2.3", style="yellow")
             sys.exit(1)
 
