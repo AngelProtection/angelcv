@@ -260,9 +260,10 @@ class ObjectDetectionModel:
         # Setup datamodule
         datamodule = self._setup_datamodule(dataset)
 
-        # Setup training callbacks
+        # Setup experiment directory
         experiment_dir = self._setup_experiment_directory()
 
+        # Setup training callbacks
         train_callbacks = [
             ModelCheckpoint(
                 dirpath=experiment_dir / "checkpoints",
