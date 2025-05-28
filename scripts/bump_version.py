@@ -112,10 +112,17 @@ class VersionBumper:
 
     def create_git_tag(self, version: str) -> None:
         """Create a new Git tag."""
-        tag_name = f"v{version}"
+        tag_name = version
         console.print(f"🏷️  Creating Git tag: {tag_name}...")
         self.run_command(["git", "tag", tag_name])
         console.print(f"✅ Git tag {tag_name} created", style="green")
+
+    def push_changes(self) -> None:
+        """Push changes and tags to remote repository."""
+        console.print("🚀 Pushing changes and tags to remote...")
+        self.run_command(["git", "push"])
+        self.run_command(["git", "push", "--tags"])
+        console.print("✅ Changes and tags pushed to remote", style="green")
 
     def commit_changes(self, version: str) -> None:
         """Commit the version changes."""
@@ -196,13 +203,23 @@ class VersionBumper:
         if Confirm.ask("Do you want to create a Git tag?"):
             self.create_git_tag(new_version)
 
+        # Ask about pushing changes
+        if Confirm.ask("Do you want to push changes and tags to remote?"):
+            self.push_changes()
+            pushed = True
+        else:
+            pushed = False
+
         # Final status
         console.print(Panel(f"✅ Version bumped to {new_version}", title="🎉 Success!", border_style="green"))
 
-        console.print("\n💡 Next steps:", style="bold blue")
-        console.print("• Push changes: git push")
-        console.print("• Push tags: git push --tags")
-        console.print("• This will trigger the release workflow! 🚀")
+        if pushed:
+            console.print("\n🚀 Changes pushed! The release workflow should trigger automatically.", style="bold green")
+        else:
+            console.print("\n💡 Next steps:", style="bold blue")
+            console.print("• Push changes: git push")
+            console.print("• Push tags: git push --tags")
+            console.print("• This will trigger the release workflow! 🚀")
 
 
 def main():
