@@ -95,10 +95,11 @@ respect-gitignore = true
 # "B" → flake8-bugbear (common bugs and code smells)
 # "S" → bandit (security issues)
 select = ["E", "F", "I", "N", "UP", "B", "S"]
-ignore = ["N812", "F401", "S101"]
+ignore = ["N812", "F401", "S101", "S603"]
 # "N812" → imported as non-lowercase
 # "F401" → unused import
 # "S101" → use assert
+# "S603" → subprocess untrusted input
 fixable = ["ALL"]
 unfixable = []
 
