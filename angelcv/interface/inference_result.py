@@ -32,7 +32,7 @@ class Boxes:
         original_width: int,
         original_height: int,
         img_coordinate_mapper: ImageCoordinateMapper,
-        class_labels: list[str] | None = None,
+        class_labels: dict[int, str] | None = None,
     ):
         """
         Initialize a Boxes object with model output and image dimensions.
@@ -47,8 +47,7 @@ class Boxes:
             original_width: Width of the original image in pixels
             original_height: Height of the original image in pixels
             img_coordinate_mapper: ImageCoordinateMapper object containing transformation parameters
-            class_labels: Optional list of class names indexed by class_id.
-                         If provided, enables label lookup by class_id.
+            class_labels: Optional dictionary mapping class indexes to class names
         """
         model_output_np = model_output.cpu().numpy() if isinstance(model_output, torch.Tensor) else model_output
         self.original_width = original_width
@@ -63,7 +62,16 @@ class Boxes:
         self.confidences = model_output_np[:, 4]
         self.class_label_ids = model_output_np[:, 5].astype(int)
         self._class_labels = class_labels
-        self.labels = [self.class_labels[i] for i in self.class_label_ids] if self._class_labels else []
+        self.labels = self._create_labels_from_class_ids()
+
+    def _create_labels_from_class_ids(self) -> list[str]:
+        """Create labels list from class IDs using the class_labels mapping."""
+        if not self._class_labels:
+            class_labels = {i: f"class_{i}" for i in range(np.max(self.class_label_ids) + 1)}
+        else:
+            class_labels = self._class_labels
+
+        return [class_labels[i] for i in self.class_label_ids]
 
     def _clean_xyxy_pix(self, xyxy_pix: np.ndarray) -> np.ndarray:
         """
@@ -97,7 +105,7 @@ class Boxes:
     def class_labels(self, class_labels: list[str]):
         """Set the class labels and update the detection labels."""
         self._class_labels = class_labels
-        self.labels = [self.class_labels[i] for i in self.class_label_ids]
+        self.labels = self._create_labels_from_class_ids()
 
     @property
     def xyxy(self) -> np.ndarray:
@@ -158,7 +166,7 @@ class InferenceResult:
         original_image: np.ndarray,
         confidence_th: float = 0.0,
         img_coordinate_mapper: ImageCoordinateMapper = None,
-        class_labels: list[str] = None,
+        class_labels: dict[int, str] | None = None,
     ):
         """
         Initialize inference results with model output and image information.
@@ -168,7 +176,7 @@ class InferenceResult:
             original_image: Original input image as numpy array in RGB format
             img_coordinate_mapper: ImageCoordinateMapper object containing transformation parameters
             confidence_th: Confidence threshold for filtering detections, default 0.0 (no filtering)
-            class_labels: List of class names indexed by class_id
+            class_labels: Dictionary mapping class indexes to class names
         """
         self.model_output = model_output
         self.original_image = original_image
