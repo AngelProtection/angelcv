@@ -1,7 +1,6 @@
 # NOTE: those are imported and set by the configuration system
 # model: model/yolov10n.yaml
 # dataset: dataset/coco.yaml
-# task: task/inference.yaml
 
 # ---------------- GENERAL ----------------
 
