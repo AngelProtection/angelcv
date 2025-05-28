@@ -78,9 +78,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Extract Python version from pyproject.toml
+        id: python-version
+        run: |
+          # Extract the requires-python field from pyproject.toml
+          PYTHON_RANGE=$(grep -E "requires-python\s*=" pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Python range: $PYTHON_RANGE"
+          
+          # Extract the upper bound (e.g., "3.13" from ">=3.9,<3.13")
+          UPPER_BOUND=$(echo $PYTHON_RANGE | grep -oE '<[0-9]+\.[0-9]+' | sed 's/<//g')
+          
+          # If no upper bound, use latest stable Python
+          if [ -z "$UPPER_BOUND" ]; then
+            PYTHON_VERSION="3.12"
+          else
+            # Use the version just below the upper bound
+            MAJOR=$(echo $UPPER_BOUND | cut -d. -f1)
+            MINOR=$(echo $UPPER_BOUND | cut -d. -f2)
+            MINOR=$((MINOR - 1))
+            PYTHON_VERSION="$MAJOR.$MINOR"
+          fi
+          
+          echo "Selected Python version: $PYTHON_VERSION"
+          echo "python-version=$PYTHON_VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python
-        # Resolves Python Version from .python-version file if no python-version is provided
         uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.python-version.outputs.python-version }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
