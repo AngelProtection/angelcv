@@ -177,6 +177,9 @@ jobs:
   bump_version:
     needs: [details, github_release, pypi_publish]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     env:
       NEW_VERSION: ${{ needs.details.outputs.new_version }}
     steps:
