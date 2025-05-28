@@ -66,12 +66,20 @@ class Boxes:
 
     def _create_labels_from_class_ids(self) -> list[str]:
         """Create labels list from class IDs using the class_labels mapping."""
-        if not self._class_labels:
-            class_labels = {i: f"class_{i}" for i in range(np.max(self.class_label_ids) + 1)}
-        else:
-            class_labels = self._class_labels
+        # If no class_label_ids exist, return empty list
+        if self.class_label_ids.size == 0:
+            return []
 
-        return [class_labels[i] for i in self.class_label_ids]
+        # Create labels for each class ID, using provided mapping where available
+        # and falling back to "class_{i}" format for missing classes
+        labels = []
+        for class_id in self.class_label_ids:
+            if self._class_labels and class_id in self._class_labels:
+                labels.append(self._class_labels[class_id])
+            else:
+                labels.append(f"class_{class_id}")
+
+        return labels
 
     def _clean_xyxy_pix(self, xyxy_pix: np.ndarray) -> np.ndarray:
         """
