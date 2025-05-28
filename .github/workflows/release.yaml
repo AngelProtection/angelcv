@@ -174,29 +174,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-  bump_version:
-    needs: [details, github_release, pypi_publish]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    env:
-      NEW_VERSION: ${{ needs.details.outputs.new_version }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Fetch full history to avoid issues with tags and branches
+  # bump_version:
+  #   needs: [details, github_release, pypi_publish]
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     pull-requests: write
+  #   env:
+  #     NEW_VERSION: ${{ needs.details.outputs.new_version }}
+  #   steps:
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0 # Fetch full history to avoid issues with tags and branches
 
-      - name: Bump version
-        run: |
-          NEW_VERSION=${{ env.NEW_VERSION }}
-          uv version "$NEW_VERSION"
+  #     - name: Bump version
+  #       run: |
+  #         NEW_VERSION=${{ env.NEW_VERSION }}
+  #         uv version "$NEW_VERSION"
 
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: Bumping version to ${{ env.NEW_VERSION }}
-          branch: bump-version-${{ env.NEW_VERSION }}
-          file_pattern: "pyproject.toml"
-          skip_dirty_check: true
-          create_branch: true
+  #     - uses: stefanzweifel/git-auto-commit-action@v5
+  #       with:
+  #         commit_message: Bumping version to ${{ env.NEW_VERSION }}
+  #         branch: bump-version-${{ env.NEW_VERSION }}
+  #         file_pattern: "pyproject.toml"
+  #         skip_dirty_check: true
+  #         create_branch: true
