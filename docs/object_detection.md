@@ -38,7 +38,7 @@ A crucial method for resuming training or deploying a trained model is `load_fro
 # model = YoloDetectionModel.load_from_checkpoint_custom(checkpoint_path: Path | str)
 ```
 
-This class method loads model weights and configuration from a saved checkpoint file (`.pt` or `.ckpt`). It intelligently matches weights, even if the model architecture in the checkpoint differs slightly from the current definition (e.g., changes in the number of classes).
+This class method loads model weights and configuration from a saved checkpoint file (`.ckpt` or `.pt`). It intelligently matches weights, even if the model architecture in the checkpoint differs slightly from the current definition (e.g., changes in the number of classes).
 
 ### Forward Pass (Inference)
 
@@ -82,11 +82,11 @@ from angelcv.interface import ObjectDetectionModel
 model = ObjectDetectionModel("yolov10n.yaml")
 
 # Load a pre-trained model from a checkpoint file
-model = ObjectDetectionModel("yolov10n.pt") # or "path/to/your/model.ckpt"
+model = ObjectDetectionModel("yolov10n.ckpt") # or "path/to/your/model.ckpt"
 ```
 
 *   If a `.yaml` file is provided, a new model is built based on that configuration.
-*   If a `.pt` or `.ckpt` file is provided, a pre-trained model is loaded from that checkpoint.
+*   If a `.ckpt` or `.pt` file is provided, a pre-trained model is loaded from that checkpoint.
 
 AngelCV can automatically resolve file paths, looking in predefined locations (like `angelcv/config/model/`) or S3 buckets if configured.
 

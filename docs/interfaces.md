@@ -12,7 +12,7 @@ Refer to the [Object Detection](./object_detection.md#high-level-interface-objec
 
 Key responsibilities:
 
-*   Loading models from configuration files (`.yaml`) or checkpoints (`.pt`, `.ckpt`).
+*   Loading models from configuration files (`.yaml`) or checkpoints (`.ckpt`, `.pt`).
 *   Managing dataset configurations and data modules.
 *   Orchestrating training, validation, and testing loops via PyTorch Lightning.
 *   Preprocessing inputs for inference.

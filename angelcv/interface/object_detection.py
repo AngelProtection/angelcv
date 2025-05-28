@@ -42,7 +42,7 @@ class ObjectDetectionModel:
         model = ObjectDetectionModel("yolov10n.yaml")
 
         # Load a pretrained model from a checkpoint
-        model = ObjectDetectionModel("yolov10n.pt")
+        model = ObjectDetectionModel("yolov10n.ckpt")
 
         # Train the model using a dataset configuration
         results = model.train(dataset="coco.yaml", epochs=100)
@@ -65,7 +65,7 @@ class ObjectDetectionModel:
         Args:
             model_source: Path to a model config file or checkpoint file.
                         If .yaml, loads a fresh model configuration - can be in angelcv/config/dataset/ or absolute path
-                        If .pt or .ckpt, loads weights from the checkpoint - in project root or absolute path
+                        If .ckpt or .pt, loads weights from the checkpoint - in project root or absolute path
         """
         # This function will find the actual path of the model file and download it from S3 if it exists
         model_source_abs_path = resolve_file_path(model_source)

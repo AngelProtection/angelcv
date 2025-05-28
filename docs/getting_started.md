@@ -26,9 +26,9 @@ Here's a simple example of how to load a pre-trained YOLOv10 model and perform i
 from angelcv import ObjectDetectionModel
 
 # Load a pre-trained YOLOv10n model (will download if not found locally)
-# You can also specify a path to a local .pt or .ckpt file,
+# You can also specify a path to a local .ckpt or .pt file,
 # or a .yaml configuration file to initialize a new model.
-model = ObjectDetectionModel("yolov10n.pt")
+model = ObjectDetectionModel("yolov10n.ckpt")
 
 # Perform inference on an image
 # Source can be a file path, URL, PIL image, torch.Tensor, or numpy array.

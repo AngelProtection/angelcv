@@ -7,7 +7,7 @@ from botocore.config import Config
 
 logger = logging.getLogger(__name__)
 
-CHECKPOINT_FILE_EXTENSIONS = (".pt", ".pth", ".ckpt", ".onnx", ".engine")
+CHECKPOINT_FILE_EXTENSIONS = (".ckpt", ".pt", ".pth", ".onnx", ".engine")
 
 
 def get_project_root() -> Path:
@@ -172,8 +172,8 @@ def test_resolve_file_path(input_str: str):
 
 
 if __name__ == "__main__":
-    test_resolve_file_path("yolov5s.pt")
-    test_resolve_file_path("yolov10s.pt")
+    test_resolve_file_path("yolov5s.ckpt")
+    test_resolve_file_path("yolov10s.ckpt")
     test_resolve_file_path("yolov10s.yaml")
     test_resolve_file_path("dataset.yaml")
     test_resolve_file_path("coco.yaml")
