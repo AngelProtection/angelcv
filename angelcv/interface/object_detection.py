@@ -386,7 +386,7 @@ class ObjectDetectionModel:
             experiment_dir = experiments_base_dir / current_time.strftime(time_format)
             logger.info(f"Created new experiment directory: {experiment_dir}")
 
-        # Create directory with exist_ok=True to handle race conditions between processes
+        # Create directory with exist_ok=True to handle the when it already exists
         experiment_dir.mkdir(parents=True, exist_ok=True)
 
         # Pass it to nested model
