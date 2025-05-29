@@ -13,7 +13,7 @@ env:
   OWNER: "AngelProtection"
 
 jobs:
-  # TODO[LOW]: Add unit tests
+  # TODO [LOW]: Add unit tests
   # unit-test:
   #   uses: AngelProtection/angelcv/.github/workflows/test.yaml@main
 

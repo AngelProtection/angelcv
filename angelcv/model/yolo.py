@@ -533,6 +533,7 @@ class YoloDetectionModel(pl.LightningModule):
             batch: Dictionary containing images and ground truth
             predictions: Dictionary containing model predictions
         """
+        # TODO [LOW]: when training with multiple GPUs, this will overwrite the same files, think how to handle this
         if not self.experiment_dir:
             logger.warning("Experiment directory not set. Skipping visualization.")
             return
