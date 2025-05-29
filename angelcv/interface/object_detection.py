@@ -260,7 +260,7 @@ class ObjectDetectionModel:
         # Setup datamodule
         datamodule = self._setup_datamodule(dataset)
 
-        # Setup experiment directory
+        # Setup experiment directory - handling multi-GPU properly
         experiment_dir = self._setup_experiment_directory()
 
         # Setup training callbacks
@@ -359,11 +359,20 @@ class ObjectDetectionModel:
     def _setup_experiment_directory(self) -> Path:
         """
         Creates and returns a single experiment directory.
+        Handles multi-GPU setups by ensuring all processes use the same directory.
         """
-        timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # Use a consistent timestamp across all processes by using a class-level timestamp
+        # This ensures all processes (even if started at slightly different times) use the same directory
+        # TODO[LOW]: find a better way to handle this, maybe using the rank of the process
+        if not hasattr(ObjectDetectionModel, "_shared_experiment_timestamp"):
+            ObjectDetectionModel._shared_experiment_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        timestamp_str = ObjectDetectionModel._shared_experiment_timestamp
 
         # Create main experiment directory
         experiment_dir = Path("experiments") / timestamp_str
+
+        # Create directory with exist_ok=True to handle race conditions between processes
         experiment_dir.mkdir(parents=True, exist_ok=True)
 
         # Pass it to nested model
@@ -578,6 +587,8 @@ def test_train():
             "num_sanity_val_steps": 0,
         }
 
+    local_rank = int(os.environ.get("LOCAL_RANK", -1))
+    print(f"🏋️ About to call model.train() in process LOCAL_RANK={local_rank}")
     results_train = model.train(
         dataset=dataset,
         max_epochs=900,
