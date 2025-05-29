@@ -356,28 +356,41 @@ class ObjectDetectionModel:
 
         return datamodule
 
-    def _setup_experiment_directory(self) -> Path:
+    def _setup_experiment_directory(self, threshold_seconds: int = 10) -> Path:
         """
-        Creates and returns a single experiment directory.
-        Handles multi-GPU setups by ensuring all processes use the same directory.
+        Creates timestamped experiment directory (experiments/YYYY-MM-DD_HH-MM-SS).
+        Reuses recent dirs within threshold_seconds to prevent duplicates (useful for multi-GPU training).
         """
-        # Get the current process rank (0 for single GPU or main process in multi-GPU)
-        local_rank = int(os.environ.get("LOCAL_RANK", 0))
+        experiments_base_dir = Path("experiments")
+        experiments_base_dir.mkdir(parents=True, exist_ok=True)  # Ensure base directory exists
+        experiment_dir = None
 
-        # Only set the timestamp on rank 0 to ensure all processes use the same directory
-        if local_rank == 0 or not hasattr(ObjectDetectionModel, "_shared_experiment_timestamp"):
-            ObjectDetectionModel._shared_experiment_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        current_time = datetime.now()
+        time_format = "%Y-%m-%d_%H-%M-%S"
 
-        # Create main experiment directory
-        experiment_dir = Path("experiments") / ObjectDetectionModel._shared_experiment_timestamp
+        # Check existing directories
+        for existing_dir_name in os.listdir(experiments_base_dir):
+            try:
+                dir_time = datetime.strptime(existing_dir_name, time_format)
+                time_difference = abs((current_time - dir_time).total_seconds())
+                if time_difference < threshold_seconds:
+                    experiment_dir = experiments_base_dir / existing_dir_name
+                    logger.info(f"Found existing recent experiment directory: {experiment_dir}")
+                    break
+            except ValueError:
+                # Not a timestamped directory, or wrong format, skip
+                continue
+
+        if experiment_dir is None:
+            # If no recent directory found, create a new one
+            experiment_dir = experiments_base_dir / current_time.strftime(time_format)
+            logger.info(f"Created new experiment directory: {experiment_dir}")
 
         # Create directory with exist_ok=True to handle race conditions between processes
         experiment_dir.mkdir(parents=True, exist_ok=True)
 
         # Pass it to nested model
         self.model.experiment_dir = experiment_dir
-
-        logger.info(f"Created experiment directory: {experiment_dir}")
 
         return experiment_dir
 
