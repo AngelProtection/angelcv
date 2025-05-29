@@ -437,7 +437,7 @@ class ObjectDetectionModel:
 
         # Setup logger
         # TODO [MID]: do it in a similar way that it's done in train(...)
-        date_str = self._get_date_str()
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         tb_logger = TensorBoardLogger(save_dir="tb_logs", name=f"test_{date_str}")
 
         # Create trainer with appropriate settings for testing
