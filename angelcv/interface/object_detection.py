@@ -361,16 +361,15 @@ class ObjectDetectionModel:
         Creates and returns a single experiment directory.
         Handles multi-GPU setups by ensuring all processes use the same directory.
         """
-        # Use a consistent timestamp across all processes by using a class-level timestamp
-        # This ensures all processes (even if started at slightly different times) use the same directory
-        # TODO[LOW]: find a better way to handle this, maybe using the rank of the process
-        if not hasattr(ObjectDetectionModel, "_shared_experiment_timestamp"):
+        # Get the current process rank (0 for single GPU or main process in multi-GPU)
+        local_rank = int(os.environ.get("LOCAL_RANK", 0))
+
+        # Only set the timestamp on rank 0 to ensure all processes use the same directory
+        if local_rank == 0 or not hasattr(ObjectDetectionModel, "_shared_experiment_timestamp"):
             ObjectDetectionModel._shared_experiment_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-        timestamp_str = ObjectDetectionModel._shared_experiment_timestamp
-
         # Create main experiment directory
-        experiment_dir = Path("experiments") / timestamp_str
+        experiment_dir = Path("experiments") / ObjectDetectionModel._shared_experiment_timestamp
 
         # Create directory with exist_ok=True to handle race conditions between processes
         experiment_dir.mkdir(parents=True, exist_ok=True)
