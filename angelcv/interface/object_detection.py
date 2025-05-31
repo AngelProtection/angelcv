@@ -129,7 +129,7 @@ class ObjectDetectionModel:
 
         # Process input sources
         processed_tensors, orig_imgs_np, source_identifiers, img_coordinate_mappers = preprocess_sources(
-            source, image_size=image_size
+            source, image_size=self.model.config.image_size
         )
 
         # Run model inference
