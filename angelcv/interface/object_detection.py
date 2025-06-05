@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 from pathlib import Path
 import re
+import time
 from typing import Any
 
 import lightning as L
@@ -120,6 +121,7 @@ class ObjectDetectionModel:
         Returns:
             list[InferenceResult]: A list of InferenceResult objects containing detection results.
         """
+        total_start_time = time.perf_counter()
         logger.info(f"Running prediction with conf={confidence_th}")
 
         if image_size is None:
@@ -129,12 +131,17 @@ class ObjectDetectionModel:
         self.model.eval()
 
         # Process input sources
+        preprocess_start_time = time.perf_counter()
         processed_tensors, orig_imgs_np, source_identifiers, img_coordinate_mappers = preprocess_sources(
             source, image_size=self.model.config.image_size
         )
+        preprocess_time = time.perf_counter() - preprocess_start_time
 
         # Run model inference
         results: list[InferenceResult] = []
+        total_model_time = 0.0
+        total_postprocess_time = 0.0
+
         with torch.no_grad():
             # Batch processing could be implemented here
             for i, processed_tensor in enumerate(processed_tensors):
@@ -142,10 +149,16 @@ class ObjectDetectionModel:
                 processed_tensor = processed_tensor.to(self.model.device)
 
                 # Run model forward pass (unsqueeze to add batch dimension)
+                model_start_time = time.perf_counter()
                 output = self.model(processed_tensor)
+                model_time = time.perf_counter() - model_start_time
+                total_model_time += model_time
 
                 # Postrocess model output (1, 400, 6 --> N, 6), where N is the number of detections above threshold
+                postprocess_start_time = time.perf_counter()
                 output = self._postprocess_detections(output, confidence_th=confidence_th)
+                postprocess_time = time.perf_counter() - postprocess_start_time
+                total_postprocess_time += postprocess_time
 
                 results.append(
                     InferenceResult(
@@ -156,7 +169,21 @@ class ObjectDetectionModel:
                     )
                 )
 
-        logger.info(f"Prediction finished. Found {sum(r.boxes.xyxy.shape[0] for r in results)} detections.")
+        total_time = time.perf_counter() - total_start_time
+        num_images = len(processed_tensors)
+        total_detections = sum(r.boxes.xyxy.shape[0] for r in results)
+
+        # Log timing information
+        logger.info(f"Inference took {total_time:.4f}s for {num_images} image(s), found {total_detections} detections.")
+        logger.info(
+            f" preP: {preprocess_time:.4f}s, forward: {total_model_time:.4f}s, post: {total_postprocess_time:.4f}s"
+        )
+        if num_images > 1:
+            logger.debug(
+                f"EACH IMAGE: preP: {preprocess_time / num_images:.4f}s, forward: {total_model_time / num_images:.4f}s",
+                f"post: {total_postprocess_time / num_images:.4f}s",
+            )
+
         return results
 
     def _postprocess_detections(self, model_output: torch.Tensor, confidence_th: float = 0.3) -> torch.Tensor:
@@ -615,6 +642,6 @@ def test_testset():
 
 
 if __name__ == "__main__":
-    # test_inference()
-    test_train()
+    test_inference()
+    # test_train()
     # test_testset()
