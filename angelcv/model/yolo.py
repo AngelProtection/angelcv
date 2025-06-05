@@ -17,9 +17,12 @@ from angelcv.interface.inference_result import InferenceResult
 from angelcv.model.blocks import v10Detect
 from angelcv.tools.loss import DetectionLoss, EndToEndDetectionLoss
 from angelcv.utils.block_utils import get_block_name_to_impl_dict
-from angelcv.utils.logger import logger
+from angelcv.utils.logging_manager import get_logger
 from angelcv.utils.ops_utils import round_to_multiple
 from angelcv.utils.source_utils import ImageCoordinateMapper
+
+# Configure logging
+logger = get_logger(__name__)
 
 
 class YoloDetectionModel(pl.LightningModule):

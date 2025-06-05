@@ -1,11 +1,12 @@
-import logging
 from pathlib import Path
 
 import boto3
 from botocore import UNSIGNED
 from botocore.config import Config
 
-logger = logging.getLogger(__name__)
+from angelcv.utils.logging_manager import get_logger
+
+logger = get_logger(__name__)
 
 CHECKPOINT_FILE_EXTENSIONS = (".ckpt", ".pt", ".pth", ".onnx", ".engine")
 

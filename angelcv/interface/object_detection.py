@@ -1,5 +1,4 @@
 from datetime import datetime
-import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -22,11 +21,12 @@ from angelcv.dataset.coco_datamodule import CocoDataModule
 from angelcv.dataset.yolo_datamodule import YOLODataModule
 from angelcv.interface.inference_result import InferenceResult
 from angelcv.model.yolo import YoloDetectionModel
+from angelcv.utils.logging_manager import get_logger, set_experiment_dir
 from angelcv.utils.path_utils import CHECKPOINT_FILE_EXTENSIONS, resolve_file_path
 from angelcv.utils.source_utils import preprocess_sources
 
 # Configure logging
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ObjectDetectionModel:
@@ -389,6 +389,9 @@ class ObjectDetectionModel:
         # Create directory with exist_ok=True to handle the when it already exists
         experiment_dir.mkdir(parents=True, exist_ok=True)
 
+        # Configure logging for this experiment directory
+        set_experiment_dir(experiment_dir)
+
         # Pass it to nested model
         self.model.experiment_dir = experiment_dir
 
@@ -579,32 +582,21 @@ def test_train():
     dataset = "../../defendry-dataset/export-custom-v1/dataset.yaml"  # "coco.yaml"
     # dataset = "coco.yaml"
 
-    if is_debug_mode():
-        print("Running in DEBUG mode")
-        kwargs = {
-            "batch_size": 4,
-            "num_workers": 2,
-            "patience": -1,
-            # "overfit_batches": 256,  # NOTE: 256 first multiple of 2 that val_loss != nan
-            "overfit_batches": 0.0,  # entire dataset
-            "num_sanity_val_steps": 2,
-        }
-    else:
-        print("Running in PRODUCTION mode")
-        kwargs = {
-            "batch_size": 8,
-            "num_workers": -1,
-            "patience": 50,
-            "overfit_batches": 0.0,  # entire dataset
-            "num_sanity_val_steps": 0,
-        }
+    train_kwargs = {
+        "batch_size": 4,
+        "num_workers": 2,
+        "patience": -1,
+        # "overfit_batches": 256,  # NOTE: 256 first multiple of 2 that val_loss != nan
+        "overfit_batches": 0.0,  # entire dataset
+        "num_sanity_val_steps": 2,
+    }
 
     local_rank = int(os.environ.get("LOCAL_RANK", -1))
     print(f"🏋️ About to call model.train() in process LOCAL_RANK={local_rank}")
     results_train = model.train(
         dataset=dataset,
-        max_epochs=900,
-        **kwargs,
+        max_epochs=2,
+        **train_kwargs,
         accelerator="gpu",
         devices=-1,  # Use all available GPUs
         precision="16-mixed",  # Better performance, especially for multi-GPU
@@ -622,6 +614,6 @@ def test_testset():
 
 
 if __name__ == "__main__":
-    test_inference()
-    # test_train()
+    # test_inference()
+    test_train()
     # test_testset()

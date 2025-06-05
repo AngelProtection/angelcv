@@ -7,8 +7,11 @@ from pydantic import BaseModel
 import yaml
 
 from angelcv.config.config_registry import Config
-from angelcv.utils.logger import logger
+from angelcv.utils.logging_manager import get_logger
 from angelcv.utils.path_utils import resolve_file_path
+
+# Configure logging
+logger = get_logger(__name__)
 
 
 # NOTE: this is a singleton class for loading and managing configuration
