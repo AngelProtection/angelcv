@@ -49,8 +49,8 @@ class ObjectDetectionModel:
         # Train the model using a dataset configuration
         results = model.train(dataset="coco.yaml", epochs=100)
 
-        # Validate the model
-        results = model.validation()
+        # Test the model
+        results = model.test(dataset="coco.yaml")
 
         # Perform inference on an image
         results = model("path/to/image.jpg")
