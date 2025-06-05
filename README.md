@@ -91,10 +91,10 @@ for result in results:
 
 For more detailed information, check out our documentation:
 
-- **[Getting Started](./docs/getting_started.md)**: Your first stop for installation and a quick tour.
-- **[Object Detection](./docs/object_detection.md)**: Learn about our object detection capabilities, focusing on YOLOv10.
-- **[Configuration](./docs/configuration.md)**: Understand how to use and customize model, training, and dataset configurations.
-- **[API Interfaces](./docs/interfaces.md)**: Explore the main Python classes you'll interact with.
+- **[Getting Started](https://angelprotection.github.io/angelcv/getting_started/)**: Your first stop for installation and a quick tour.
+- **[Object Detection](https://angelprotection.github.io/angelcv/object_detection/)**: Learn about our object detection capabilities, focusing on YOLOv10.
+- **[Configuration](https://angelprotection.github.io/angelcv/configuration/)**: Understand how to use and customize model, training, and dataset configurations.
+- **[API Interfaces](https://angelprotection.github.io/angelcv/interfaces/)**: Explore the main Python classes you'll interact with.
 
 ## 🤝 Contributing
 
