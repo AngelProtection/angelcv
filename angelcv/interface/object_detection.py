@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 from pathlib import Path
+import re
 from typing import Any
 
 import lightning as L
@@ -367,19 +368,19 @@ class ObjectDetectionModel:
 
         current_time = datetime.now()
         time_format = "%Y-%m-%d_%H-%M-%S"
+        timestamp_pattern = r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$"
 
         # Check existing directories
         for existing_dir_name in os.listdir(experiments_base_dir):
-            try:
+            # Check if directory name matches the expected timestamp format using regex
+            if re.match(timestamp_pattern, existing_dir_name):
+                # NOTE: this is inside re.match(...) because if the format is not correct, it will raise an error
                 dir_time = datetime.strptime(existing_dir_name, time_format)
                 time_difference = abs((current_time - dir_time).total_seconds())
                 if time_difference < threshold_seconds:
                     experiment_dir = experiments_base_dir / existing_dir_name
                     logger.info(f"Found existing recent experiment directory: {experiment_dir}")
                     break
-            except ValueError:
-                # Not a timestamped directory, or wrong format, skip
-                continue
 
         if experiment_dir is None:
             # If no recent directory found, create a new one
