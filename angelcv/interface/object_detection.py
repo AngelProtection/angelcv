@@ -285,10 +285,12 @@ class ObjectDetectionModel:
             self.model.config.train.patience = patience
         if image_size is not None:
             self.model.config.image_size = image_size
+            self.model.config.test.data.image_size = image_size
         if batch_size is not None:
             self.model.config.train.data.batch_size = batch_size
         if num_workers is not None:
             self.model.config.num_workers = num_workers
+            self.model.config.test.data.num_workers = num_workers
 
         # Setup datamodule
         datamodule = self._setup_datamodule(dataset)
@@ -471,10 +473,12 @@ class ObjectDetectionModel:
         # Update configuration with any provided settings
         if image_size is not None:
             self.model.config.image_size = image_size
+            self.model.config.test.data.image_size = image_size
         if batch_size is not None:
             self.model.config.test.data.batch_size = batch_size
         if num_workers is not None:
             self.model.config.num_workers = num_workers
+            self.model.config.test.data.num_workers = num_workers
 
         # Setup datamodule
         datamodule = self._setup_datamodule(dataset)
