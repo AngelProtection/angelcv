@@ -109,6 +109,7 @@ class ObjectDetectionModel:
         source: str | Path | torch.Tensor | np.ndarray | list[str | Path | torch.Tensor | np.ndarray],
         confidence_th: float = 0.3,
         image_size: int | None = None,
+        quiet: bool = False,
     ) -> list[InferenceResult]:
         """
         Performs inference on the given source(s).
@@ -122,7 +123,6 @@ class ObjectDetectionModel:
             list[InferenceResult]: A list of InferenceResult objects containing detection results.
         """
         total_start_time = time.perf_counter()
-        logger.info(f"Running prediction with conf={confidence_th}")
 
         if image_size is None:
             image_size = self.model.config.image_size
@@ -174,15 +174,20 @@ class ObjectDetectionModel:
         total_detections = sum(r.boxes.xyxy.shape[0] for r in results)
 
         # Log timing information
-        logger.info(f"Inference took {total_time:.4f}s for {num_images} image(s), found {total_detections} detections.")
-        logger.info(
-            f" pre: {preprocess_time:.4f}s, forward: {total_model_time:.4f}s, post: {total_postprocess_time:.4f}s"
-        )
-        if num_images > 1:
-            logger.debug(
-                f"EACH IMAGE: pre: {preprocess_time / num_images:.4f}s, forward: {total_model_time / num_images:.4f}s",
-                f"post: {total_postprocess_time / num_images:.4f}s",
+        if not quiet:
+            logger.info(
+                f"Inference took {total_time * 1000:.1f}ms for {num_images} image(s), found {total_detections} detections."
             )
+            logger.info(
+                f" pre: {preprocess_time * 1000:.1f}ms, forward: {total_model_time * 1000:.1f}ms, "
+                f"post: {total_postprocess_time * 1000:.1f}ms"
+            )
+            if num_images > 1:
+                logger.debug(
+                    f"EACH IMAGE: pre: {preprocess_time / num_images * 1000:.1f}ms, "
+                    f"forward: {total_model_time / num_images * 1000:.1f}ms, "
+                    f"post: {total_postprocess_time / num_images * 1000:.1f}ms"
+                )
 
         return results
 
