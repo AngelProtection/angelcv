@@ -176,11 +176,11 @@ class ObjectDetectionModel:
         # Log timing information
         logger.info(f"Inference took {total_time:.4f}s for {num_images} image(s), found {total_detections} detections.")
         logger.info(
-            f" preP: {preprocess_time:.4f}s, forward: {total_model_time:.4f}s, post: {total_postprocess_time:.4f}s"
+            f" pre: {preprocess_time:.4f}s, forward: {total_model_time:.4f}s, post: {total_postprocess_time:.4f}s"
         )
         if num_images > 1:
             logger.debug(
-                f"EACH IMAGE: preP: {preprocess_time / num_images:.4f}s, forward: {total_model_time / num_images:.4f}s",
+                f"EACH IMAGE: pre: {preprocess_time / num_images:.4f}s, forward: {total_model_time / num_images:.4f}s",
                 f"post: {total_postprocess_time / num_images:.4f}s",
             )
 
