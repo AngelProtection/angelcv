@@ -6,15 +6,15 @@ AngelCV is a project by [**Angel Protection System**](https://angelprotection.co
 
 Our mission is to provide cutting-edge deep learning models and tools that you can seamlessly integrate into your projects, whether for research, personal use, or commercial applications. All our code and pre-trained models are under the **Apache 2.0 License**, giving you the freedom to innovate without restrictive licensing.
 
-*A note on our open-source commitment: Angel Protection System initially developed AngelCV to enhance its advanced computer vision capabilities for security applications. We are excited to share it with the open-source community to foster innovation and allow everyone to benefit from and contribute to its development.*
+_A note on our open-source commitment: Angel Protection System initially developed AngelCV to enhance its advanced computer vision capabilities for security applications. We are excited to share it with the open-source community to foster innovation and allow everyone to benefit from and contribute to its development._
 
 ## ✨ Why AngelCV?
 
-*   **Open & Free for Commercial Use**: Build your next big thing without worrying about licensing fees or restrictions. Our Apache 2.0 license covers both the library and our provided pre-trained models.
-*   **State-of-the-Art Models**: We start with robust implementations like YOLOv10 for object detection and plan to expand to other vision tasks (classification, segmentation, oriented bounding boxes) and model architectures.
-*   **Developer-Friendly Interface**: A clean, intuitive API (see `ObjectDetectionModel` and `InferenceResult`) makes common tasks like training, inference, and evaluation straightforward.
-*   **Flexible Configuration**: Easily customize model architectures, training parameters, and datasets using YAML-based configuration files.
-*   **Community Driven (Future)**: We aim to build a community around AngelCV.
+- **Open & Free for Commercial Use**: Build your next big thing without worrying about licensing fees or restrictions. Our Apache 2.0 license covers both the library and our provided pre-trained models.
+- **State-of-the-Art Models**: We start with robust implementations like YOLOv10 for object detection and plan to expand to other vision tasks (classification, segmentation, oriented bounding boxes) and model architectures.
+- **Developer-Friendly Interface**: A clean, intuitive API (see `ObjectDetectionModel` and `InferenceResult`) makes common tasks like training, inference, and evaluation straightforward.
+- **Flexible Configuration**: Easily customize model architectures, training parameters, and datasets using YAML-based configuration files.
+- **Community Driven (Future)**: We aim to build a community around AngelCV.
 
 ## 🚀 Getting Started
 
@@ -59,14 +59,42 @@ for result in results:
     result.save("output_image.jpg")
 ```
 
+## 🚧 Development Status
+
+> **⚠️ Repository Under Heavy Development**
+>
+> AngelCV is actively being developed. While core functionality is stable, we're continuously improving and expanding features.
+
+### ✅ **Stable & Ready to Use**
+
+- **Object Detection**: Training, validation, testing, and inference are fully stable
+- **YOLOv10 Integration**: Robust implementation with pre-trained models
+- **Core API**: `ObjectDetectionModel` and `InferenceResult` interfaces
+- **Configuration System**: YAML-based model and training configuration
+- **Model Export**: ONNX, TensorRT, and other deployment formats
+
+### 🔄 **Worning On**
+
+- **Data Augmentation**: Expanding augmentation techniques to improve training performance on large datasets
+- **Performance Optimization**: Addressing slightly below-expected performance on big datasets
+- **Documentation**: Comprehensive guides and examples
+
+### 📋 **Coming Soon (TODO)**
+
+- **Image Segmentation**: Semantic and instance segmentation models
+- **Oriented Bounding Boxes**: Support for rotated object detection
+- **Classification Models**: Standalone image classification capabilities
+- **Additional Architectures**: Beyond YOLOv10 (YOLOv9, DETR, etc.)
+- **Advanced Metrics**: Comprehensive evaluation and benchmarking tools
+
 ## 📚 Dive Deeper
 
 For more detailed information, check out our documentation:
 
-*   **[Getting Started](./docs/getting_started.md)**: Your first stop for installation and a quick tour.
-*   **[Object Detection](./docs/object_detection.md)**: Learn about our object detection capabilities, focusing on YOLOv10.
-*   **[Configuration](./docs/configuration.md)**: Understand how to use and customize model, training, and dataset configurations.
-*   **[API Interfaces](./docs/interfaces.md)**: Explore the main Python classes you'll interact with.
+- **[Getting Started](./docs/getting_started.md)**: Your first stop for installation and a quick tour.
+- **[Object Detection](./docs/object_detection.md)**: Learn about our object detection capabilities, focusing on YOLOv10.
+- **[Configuration](./docs/configuration.md)**: Understand how to use and customize model, training, and dataset configurations.
+- **[API Interfaces](./docs/interfaces.md)**: Explore the main Python classes you'll interact with.
 
 ## 🤝 Contributing
 
