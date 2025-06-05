@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from angelcv.utils.logger import logger
+from angelcv.utils.logging_manager import get_logger
 from angelcv.utils.source_utils import ImageCoordinateMapper
+
+logger = get_logger(__name__)
 
 
 class Boxes:

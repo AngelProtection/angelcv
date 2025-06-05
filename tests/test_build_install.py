@@ -22,13 +22,13 @@ import torch
 import numpy as np
 from angelcv.utils.env_utils import is_debug_mode
 from angelcv.utils.block_utils import get_block_name_to_impl_dict, create_activation_function
-from angelcv.utils.logger import setup_logger
+from angelcv.utils.logging_manager import get_logger
 
 # Test basic functionality
 print("Testing AngelCV package...")
 
 # Test logger
-logger = setup_logger("TestLogger")
+logger = get_logger("TestLogger")
 logger.info("Logger initialized successfully")
 
 # Test activation function creation
