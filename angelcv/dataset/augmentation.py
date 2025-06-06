@@ -30,7 +30,7 @@ def default_train_transforms(max_size: int = 640) -> Callable:
             A.CLAHE(p=0.1),
             A.RandomBrightnessContrast(p=0.1),
             A.RandomGamma(p=0.1),
-            # A.ImageCompression(quality_range=(70, 90), p=0.2),  # TODO [LOW]: uncomment (problems with training server)
+            # A.ImageCompression(quality_range=(70, 90), p=0.2),  # TODO: uncomment (training server issues)
             A.HorizontalFlip(p=0.3),
             A.VerticalFlip(p=0.3),
             # ----------------- END AUGMENTATION -----------------
