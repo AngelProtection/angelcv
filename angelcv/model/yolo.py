@@ -254,13 +254,7 @@ class YoloDetectionModel(pl.LightningModule):
             prog_bar=True,
         )
 
-        # TODO [LOW]: figure out if this is required (already using self.log)
-        return {
-            "loss": detection_loss.total,
-            "loss/iou/train": detection_loss.iou,
-            "loss/clf/train": detection_loss.cls,
-            "loss/dfl/train": detection_loss.dfl,
-        }
+        return detection_loss.total
 
     def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> STEP_OUTPUT:
         # Get predictions
@@ -294,13 +288,7 @@ class YoloDetectionModel(pl.LightningModule):
         if batch_idx == 0 and (self.current_epoch % self.vis_interval == 0 or self.current_epoch == 0):
             self._save_detection_visualizations(batch, preds_feats_dict)
 
-        # TODO [LOW]: figure out if this is required (already using self.log)
-        return {
-            "loss": detection_loss.total,
-            "loss/iou/val": detection_loss.iou,
-            "loss/clf/val": detection_loss.cls,
-            "loss/dfl/val": detection_loss.dfl,
-        }
+        return detection_loss.total
 
     def test_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> STEP_OUTPUT:
         # Get predictions
@@ -328,12 +316,7 @@ class YoloDetectionModel(pl.LightningModule):
         # Update mAP metric
         self.map_metric.update(formatted_predictions, formatted_targets)
 
-        return {
-            "loss": detection_loss.total,
-            "loss/iou/test": detection_loss.iou,
-            "loss/clf/test": detection_loss.cls,
-            "loss/dfl/test": detection_loss.dfl,
-        }
+        return detection_loss.total
 
     def on_validation_epoch_end(self):
         map_dict = self.map_metric.compute()
@@ -368,15 +351,18 @@ class YoloDetectionModel(pl.LightningModule):
         map_dict = self.map_metric.compute()
 
         # Log different MAP values
-        self.log("test/map", map_dict["map"], on_epoch=True)
-        self.log("test/map_50", map_dict["map_50"], on_epoch=True)
-        self.log("test/map_75", map_dict["map_75"], on_epoch=True)
+        self.log("map/50-95/test", map_dict["map"], on_epoch=True)
+        self.log("map/50/test", map_dict["map_50"], on_epoch=True)
+        self.log("map/75/test", map_dict["map_75"], on_epoch=True)
+        self.log("map/small/test", map_dict["map_small"], on_epoch=True)
+        self.log("map/medium/test", map_dict["map_medium"], on_epoch=True)
+        self.log("map/large/test", map_dict["map_large"], on_epoch=True)
 
         # Get the current values from the logged metrics
-        test_loss = self.trainer.callback_metrics.get("test_loss")
-        test_loss_iou = self.trainer.callback_metrics.get("test_loss_iou")
-        test_loss_clf = self.trainer.callback_metrics.get("test_loss_clf")
-        test_loss_dlf = self.trainer.callback_metrics.get("test_loss_dlf")
+        test_loss = self.trainer.callback_metrics.get("loss/total/test")
+        test_loss_iou = self.trainer.callback_metrics.get("loss/iou/test")
+        test_loss_clf = self.trainer.callback_metrics.get("loss/clf/test")
+        test_loss_dlf = self.trainer.callback_metrics.get("loss/dfl/test")
 
         # Print them in a formatted way
         print("Test Epoch End:")
