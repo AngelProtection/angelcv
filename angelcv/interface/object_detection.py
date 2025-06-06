@@ -618,8 +618,6 @@ def test_inference():
 
 
 def test_train():
-    from angelcv.utils.env_utils import is_debug_mode
-
     model = ObjectDetectionModel("yolov10s.ckpt")  # from S3 checkpoint (weights)
 
     # Train model
