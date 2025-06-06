@@ -309,8 +309,8 @@ class ObjectDetectionModel:
         train_callbacks = [
             ModelCheckpoint(
                 dirpath=experiment_dir / "checkpoints",
-                filename="model-{epoch:03d}-{val_loss:.2f}",
-                monitor="val_loss",
+                filename="model-{epoch:03d}-{val_map:.2f}",
+                monitor="val_map",
                 save_top_k=3,
                 save_last=True,
                 auto_insert_metric_name=True,
@@ -321,7 +321,7 @@ class ObjectDetectionModel:
         ]
 
         if self.model.config.train.patience > 0:
-            train_callbacks.append(EarlyStopping(monitor="val_loss", patience=self.model.config.train.patience))
+            train_callbacks.append(EarlyStopping(monitor="val_map", patience=self.model.config.train.patience))
 
         # Add custom callbacks if provided
         if "callbacks" in kwargs:

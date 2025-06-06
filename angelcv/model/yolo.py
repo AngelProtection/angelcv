@@ -76,10 +76,10 @@ class YoloDetectionModel(pl.LightningModule):
         self.map_metric.warn_on_many_detections = False
 
         self.loss_buffers = {
-            "train_loss": deque(maxlen=20),
-            "train_loss_iou": deque(maxlen=20),
-            "train_loss_clf": deque(maxlen=20),
-            "train_loss_dlf": deque(maxlen=20),
+            "loss/total/train": deque(maxlen=20),
+            "loss/iou/train": deque(maxlen=20),
+            "loss/clf/train": deque(maxlen=20),
+            "loss/dfl/train": deque(maxlen=20),
         }
 
         # Visualization settings
@@ -224,41 +224,42 @@ class YoloDetectionModel(pl.LightningModule):
 
         self.log_dict(
             {
-                "train_loss": detection_loss.total,
-                "train_loss_iou": detection_loss.iou,
-                "train_loss_clf": detection_loss.cls,
-                "train_loss_dlf": detection_loss.dfl,
+                "loss/total/train": detection_loss.total,
+                "loss/iou/train": detection_loss.iou,
+                "loss/clf/train": detection_loss.cls,
+                "loss/dfl/train": detection_loss.dfl,
             }  # default on_step=True, on_epoch=False
         )
 
         # Update rolling averages
-        self.loss_buffers["train_loss"].append(detection_loss.total.item())
-        self.loss_buffers["train_loss_iou"].append(detection_loss.iou.item())
-        self.loss_buffers["train_loss_clf"].append(detection_loss.cls.item())
-        self.loss_buffers["train_loss_dlf"].append(detection_loss.dfl.item())
+        self.loss_buffers["loss/total/train"].append(detection_loss.total.item())
+        self.loss_buffers["loss/iou/train"].append(detection_loss.iou.item())
+        self.loss_buffers["loss/clf/train"].append(detection_loss.cls.item())
+        self.loss_buffers["loss/dfl/train"].append(detection_loss.dfl.item())
 
         # Compute the rolling average for each metric
-        avg_train_loss = sum(self.loss_buffers["train_loss"]) / len(self.loss_buffers["train_loss"])
-        avg_train_loss_iou = sum(self.loss_buffers["train_loss_iou"]) / len(self.loss_buffers["train_loss_iou"])
-        avg_train_loss_clf = sum(self.loss_buffers["train_loss_clf"]) / len(self.loss_buffers["train_loss_clf"])
-        avg_train_loss_dlf = sum(self.loss_buffers["train_loss_dlf"]) / len(self.loss_buffers["train_loss_dlf"])
+        avg_train_loss = sum(self.loss_buffers["loss/total/train"]) / len(self.loss_buffers["loss/total/train"])
+        avg_train_loss_iou = sum(self.loss_buffers["loss/iou/train"]) / len(self.loss_buffers["loss/iou/train"])
+        avg_train_loss_clf = sum(self.loss_buffers["loss/clf/train"]) / len(self.loss_buffers["loss/clf/train"])
+        avg_train_loss_dlf = sum(self.loss_buffers["loss/dfl/train"]) / len(self.loss_buffers["loss/dfl/train"])
 
         # Log the rolling averages to the progress bar
         self.log_dict(
             {
-                "train_loss_ra": avg_train_loss,
-                "train_loss_iou_ra": avg_train_loss_iou,
-                "train_loss_clf_ra": avg_train_loss_clf,
-                "train_loss_dlf_ra": avg_train_loss_dlf,
+                "loss/total/train_ra": avg_train_loss,
+                "loss/iou/train_ra": avg_train_loss_iou,
+                "loss/clf/train_ra": avg_train_loss_clf,
+                "loss/dfl/train_ra": avg_train_loss_dlf,
             },
             prog_bar=True,
         )
 
+        # TODO [LOW]: figure out if this is required (already using self.log)
         return {
             "loss": detection_loss.total,
-            "loss_iou": detection_loss.iou,
-            "loss_clf": detection_loss.cls,
-            "loss_dlf": detection_loss.dfl,
+            "loss/iou/train": detection_loss.iou,
+            "loss/clf/train": detection_loss.cls,
+            "loss/dfl/train": detection_loss.dfl,
         }
 
     def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> STEP_OUTPUT:
@@ -273,10 +274,10 @@ class YoloDetectionModel(pl.LightningModule):
         # be of different size
         self.log_dict(
             {
-                "val_loss": detection_loss.total,  # NOTE: used for EarlyStopping
-                "val_loss_iou": detection_loss.iou,
-                "val_loss_clf": detection_loss.cls,
-                "val_loss_dlf": detection_loss.dfl,
+                "loss/total/val": detection_loss.total,  # NOTE: used for EarlyStopping
+                "loss/iou/val": detection_loss.iou,
+                "loss/clf/val": detection_loss.cls,
+                "loss/dfl/val": detection_loss.dfl,
             },  # default on_step=False, on_epoch=True
             batch_size=batch["images"].shape[0],
             sync_dist=True,  # to sync logging across all GPU workers (may have performance impact)
@@ -293,11 +294,12 @@ class YoloDetectionModel(pl.LightningModule):
         if batch_idx == 0 and (self.current_epoch % self.vis_interval == 0 or self.current_epoch == 0):
             self._save_detection_visualizations(batch, preds_feats_dict)
 
+        # TODO [LOW]: figure out if this is required (already using self.log)
         return {
             "loss": detection_loss.total,
-            "loss_iou": detection_loss.iou,
-            "loss_clf": detection_loss.cls,
-            "loss_dlf": detection_loss.dfl,
+            "loss/iou/val": detection_loss.iou,
+            "loss/clf/val": detection_loss.cls,
+            "loss/dfl/val": detection_loss.dfl,
         }
 
     def test_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> STEP_OUTPUT:
@@ -310,10 +312,10 @@ class YoloDetectionModel(pl.LightningModule):
         # Log metrics with test/ prefix
         self.log_dict(
             {
-                "test_loss": detection_loss.total,
-                "test_loss_iou": detection_loss.iou,
-                "test_loss_clf": detection_loss.cls,
-                "test_loss_dlf": detection_loss.dfl,
+                "loss/total/test": detection_loss.total,
+                "loss/iou/test": detection_loss.iou,
+                "loss/clf/test": detection_loss.cls,
+                "loss/dfl/test": detection_loss.dfl,
             },
             batch_size=batch["images"].shape[0],
             sync_dist=True,  # to sync logging across all GPU workers
@@ -328,24 +330,28 @@ class YoloDetectionModel(pl.LightningModule):
 
         return {
             "loss": detection_loss.total,
-            "loss_iou": detection_loss.iou,
-            "loss_clf": detection_loss.cls,
-            "loss_dlf": detection_loss.dfl,
+            "loss/iou/test": detection_loss.iou,
+            "loss/clf/test": detection_loss.cls,
+            "loss/dfl/test": detection_loss.dfl,
         }
 
     def on_validation_epoch_end(self):
         map_dict = self.map_metric.compute()
 
         # Log different MAP values
-        self.log("val/map", map_dict["map"], on_epoch=True)
-        self.log("val/map_50", map_dict["map_50"], on_epoch=True)
-        self.log("val/map_75", map_dict["map_75"], on_epoch=True)
+        self.log("val_map", map_dict["map"], on_epoch=True)  # for ModelCheckpoint compatibility
+        self.log("map/50-95/val", map_dict["map"], on_epoch=True)
+        self.log("map/50/val", map_dict["map_50"], on_epoch=True)
+        self.log("map/75/val", map_dict["map_75"], on_epoch=True)
+        self.log("map/small/val", map_dict["map_small"], on_epoch=True)
+        self.log("map/medium/val", map_dict["map_medium"], on_epoch=True)
+        self.log("map/large/val", map_dict["map_large"], on_epoch=True)
 
         # Get the current values from the logged metrics
-        val_loss = self.trainer.callback_metrics.get("val_loss")
-        val_loss_iou = self.trainer.callback_metrics.get("val_loss_iou")
-        val_loss_clf = self.trainer.callback_metrics.get("val_loss_clf")
-        val_loss_dlf = self.trainer.callback_metrics.get("val_loss_dlf")
+        val_loss = self.trainer.callback_metrics.get("loss/total/val")
+        val_loss_iou = self.trainer.callback_metrics.get("loss/iou/val")
+        val_loss_clf = self.trainer.callback_metrics.get("loss/clf/val")
+        val_loss_dlf = self.trainer.callback_metrics.get("loss/dfl/val")
 
         # Print them in a formatted way
         print("Validation Epoch End:")
