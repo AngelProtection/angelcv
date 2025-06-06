@@ -176,17 +176,19 @@ class ObjectDetectionModel:
         # Log timing information
         if not quiet:
             logger.info(
-                f"Inference took {total_time * 1000:.1f}ms for {num_images} image(s), found {total_detections} detections."
+                f"Inference took {total_time * 1000:.1f}ms for {num_images} image(s), "
+                f"found {total_detections} detections."
             )
             logger.info(
-                f" pre: {preprocess_time * 1000:.1f}ms, forward: {total_model_time * 1000:.1f}ms, "
-                f"post: {total_postprocess_time * 1000:.1f}ms"
+                f"  preprocessing: {preprocess_time * 1000:.1f}ms, "
+                f"inference: {total_model_time * 1000:.1f}ms, "
+                f"postprocessing: {total_postprocess_time * 1000:.1f}ms"
             )
             if num_images > 1:
                 logger.debug(
-                    f"EACH IMAGE: pre: {preprocess_time / num_images * 1000:.1f}ms, "
-                    f"forward: {total_model_time / num_images * 1000:.1f}ms, "
-                    f"post: {total_postprocess_time / num_images * 1000:.1f}ms"
+                    f"  EACH IMAGE: preprocessing: {preprocess_time / num_images * 1000:.1f}ms, "
+                    f"inference: {total_model_time / num_images * 1000:.1f}ms, "
+                    f"postprocessing: {total_postprocess_time / num_images * 1000:.1f}ms"
                 )
 
         return results
