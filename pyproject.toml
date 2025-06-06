@@ -14,7 +14,7 @@ include = ["angelcv","angelcv*"]
 # ------------------------ PROJECT METADATA ------------------------
 [project]
 name = "angelcv"
-version = "0.1.5"
+version = "0.1.6"
 description = "Train and inference for Computer Vision models made easy."
 readme = "README.md"
 requires-python = ">=3.9,<3.13" # torchvision no 3.13 yet
