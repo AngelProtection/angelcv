@@ -640,6 +640,7 @@ def test_train():
     results_train = model.train(
         dataset=dataset,
         max_epochs=2,
+        image_size=1280,  # 640
         **train_kwargs,
         accelerator="gpu",
         devices=-1,  # Use all available GPUs
