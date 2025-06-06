@@ -4,18 +4,18 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 
-def default_train_transforms() -> Callable:
+def default_train_transforms(max_size: int = 640) -> Callable:
     """
     Default training data transformations.
     """
-    # NOTE: doens't seem necessary to normalize the iamges with ImageNet values
+    # NOTE: doesn't seem necessary to normalize the images with ImageNet values
     # A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     # simply dividing by 255
     # TODO [MID]: implement mosaic augmentation, not trivial with albumentations framework
     return A.Compose(
         transforms=[
-            A.LongestMaxSize(max_size=640),
-            A.PadIfNeeded(min_height=640, min_width=640),
+            A.LongestMaxSize(max_size=max_size),
+            A.PadIfNeeded(min_height=max_size, min_width=max_size),
             # ---------------- START AUGMENTATION ----------------
             A.Affine(p=0.2, rotate=(-30, 30), shear=(-10, 10), scale=(0.8, 1.2), translate_percent=(0.1, 0.2)),
             A.OneOf(
