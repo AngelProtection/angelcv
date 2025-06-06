@@ -161,8 +161,8 @@ class YOLODataModule(L.LightningDataModule):
         self.val_labels_dir = self._get_labels_dir(self.val_dir)
         self.test_labels_dir = self._get_labels_dir(self.test_dir) if self.test_dir is not None else None
 
-        self.train_transforms = train_transforms or default_train_transforms()
-        self.val_transforms = val_transforms or default_val_transforms()
+        self.train_transforms = train_transforms or default_train_transforms(max_size=config.train.data.image_size)
+        self.val_transforms = val_transforms or default_val_transforms(max_size=config.train.data.image_size)
 
         self.train_dataset = None
         self.val_dataset = None
