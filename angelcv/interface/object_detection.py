@@ -98,6 +98,7 @@ class ObjectDetectionModel:
             source: Source for detection: file path, URL, PIL image, torch.Tensor, numpy array, or a list of these.
             confidence_th: Confidence threshold for filtering detections.
             image_size: Size of the longest side of the image to be resized to (defaults to the model's image_size)
+            verbose: Verbosity level (0=silent, 1=basic timing, 2=detailed per-image timing).
 
         Returns:
             list[InferenceResult]: A list of InferenceResult objects containing detection results.
@@ -109,7 +110,7 @@ class ObjectDetectionModel:
         source: str | Path | torch.Tensor | np.ndarray | list[str | Path | torch.Tensor | np.ndarray],
         confidence_th: float = 0.3,
         image_size: int | None = None,
-        quiet: bool = False,
+        verbose: int = 1,
     ) -> list[InferenceResult]:
         """
         Performs inference on the given source(s).
@@ -118,6 +119,7 @@ class ObjectDetectionModel:
             source: Source for detection: file path, URL, PIL image, torch.Tensor, numpy array, or a list of these.
             confidence_th: Confidence threshold for filtering detections.
             image_size: Size of the longest side of the image to be resized to (defaults to the model's image_size)
+            verbose: Verbosity level (0=silent, 1=basic timing, 2=detailed per-image timing).
 
         Returns:
             list[InferenceResult]: A list of InferenceResult objects containing detection results.
@@ -173,23 +175,26 @@ class ObjectDetectionModel:
         num_images = len(processed_tensors)
         total_detections = sum(r.boxes.xyxy.shape[0] for r in results)
 
-        # Log timing information
-        if not quiet:
+        # Log timing information based on verbosity level
+        if verbose >= 1:
             logger.info(
                 f"Inference took {total_time * 1000:.1f}ms for {num_images} image(s), "
                 f"found {total_detections} detections."
             )
+
+        if verbose >= 2:
             logger.info(
                 f"  preprocessing: {preprocess_time * 1000:.1f}ms, "
                 f"inference: {total_model_time * 1000:.1f}ms, "
                 f"postprocessing: {total_postprocess_time * 1000:.1f}ms"
             )
-            if num_images > 1:
-                logger.debug(
-                    f"  EACH IMAGE: preprocessing: {preprocess_time / num_images * 1000:.1f}ms, "
-                    f"inference: {total_model_time / num_images * 1000:.1f}ms, "
-                    f"postprocessing: {total_postprocess_time / num_images * 1000:.1f}ms"
-                )
+
+        if verbose >= 2 and num_images > 1:
+            logger.info(
+                f"  EACH IMAGE: preprocessing: {preprocess_time / num_images * 1000:.1f}ms, "
+                f"inference: {total_model_time / num_images * 1000:.1f}ms, "
+                f"postprocessing: {total_postprocess_time / num_images * 1000:.1f}ms"
+            )
 
         return results
 
