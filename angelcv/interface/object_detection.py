@@ -614,7 +614,7 @@ def test_inference():
     # Load model
     # model = ObjectDetectionModel("yolov10n.yaml") # from yaml (no weights)
     # model = ObjectDetectionModel("checkpoints/2025-05-07_09-49-47/last.ckpt") # from local checkpoint (weights)
-    model = ObjectDetectionModel("yolov10s.ckpt")  # from S3 checkpoint (weights)
+    model = ObjectDetectionModel("yolov10m.ckpt")  # from S3 checkpoint (weights)
 
     # Perform inference
     results_inference = model("angelcv/images/city.jpg", confidence_th=0.2)
