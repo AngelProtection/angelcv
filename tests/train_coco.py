@@ -19,6 +19,10 @@ from angelcv.dataset.coco_datamodule import CocoDataModule
 from angelcv.dataset.yolo_datamodule import YOLODataModule
 from angelcv.model.yolo import YoloDetectionModel
 from angelcv.utils.env_utils import is_debug_mode
+from angelcv.utils.logging_manager import get_logger
+
+logger = get_logger(__name__)
+
 
 # Make proper use of the tensor cores
 torch.set_float32_matmul_precision("medium")  # "high"
@@ -31,7 +35,7 @@ os.environ["NCCL_P2P_DISABLE"] = "1"
 dataset = "coco"  # "yolo", "coco"
 
 if is_debug_mode():
-    print("Running in DEBUG mode")
+    logger.info("Running in DEBUG mode")
     batch_size = 8
     num_workers = 2
     patience = -1
@@ -39,7 +43,7 @@ if is_debug_mode():
     # overfit_batches = 0.0  # entire dataset
     num_sanity_val_steps = 2
 else:
-    print("Running in PRODUCTION mode")
+    logger.info("Running in PRODUCTION mode")
     batch_size = 32
     num_workers = -1
     patience = 50
