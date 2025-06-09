@@ -10,6 +10,7 @@ import torch
 from torch import nn
 from torch.optim.lr_scheduler import LinearLR, SequentialLR
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
+import torchvision.utils as vutils
 
 from angelcv.config import ConfigManager
 from angelcv.config.config_registry import BlockConfig, Config
@@ -521,7 +522,7 @@ class YoloDetectionModel(pl.LightningModule):
             return
 
         # Create output directory if it doesn't exist
-        output_dir = self.experiment_dir / "visualizations" / f"epoch_{self.current_epoch:04d}"
+        output_dir = self.experiment_dir / "visualizations"
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Determine which samples to visualize
@@ -533,6 +534,9 @@ class YoloDetectionModel(pl.LightningModule):
 
         # Get class labels from the config if available
         class_labels = getattr(self.config.dataset, "names", None)
+
+        # Collect annotated images for grid creation
+        annotated_images = []
 
         # Process each selected sample
         for idx in self.vis_batch_indices:
@@ -568,23 +572,31 @@ class YoloDetectionModel(pl.LightningModule):
                 class_labels=class_labels,
             )
 
-            # Save the annotated image
-            output_path = output_dir / f"sample_{idx:02d}.jpg"
-            result.save(output_path)
+            # Get annotated image and convert to tensor
+            annotated_img = result.annotate_image()
+            annotated_tensor = torch.from_numpy(annotated_img).permute(2, 0, 1) / 255.0
+            annotated_images.append(annotated_tensor)
 
-            # Log the image to TensorBoard if available
-            if hasattr(self.logger, "experiment") and hasattr(self.logger.experiment, "add_image"):
-                try:
-                    # Convert back to tensor for TensorBoard (CHW format)
-                    annotated_img = result.annotate_image()
-                    annotated_tensor = torch.from_numpy(annotated_img).permute(2, 0, 1) / 255.0
+        # Create and log image grid to TensorBoard if available
+        if annotated_images and hasattr(self.logger, "experiment") and hasattr(self.logger.experiment, "add_image"):
+            # Create grid of images (arrange in a square-ish grid)
+            grid_cols = int(np.ceil(np.sqrt(len(annotated_images))))
+            image_grid = vutils.make_grid(
+                annotated_images,
+                nrow=grid_cols,
+                padding=2,
+                normalize=False,
+                pad_value=1.0,  # White padding
+            )
 
-                    # Add to TensorBoard
-                    self.logger.experiment.add_image(
-                        f"{self.current_stage}/detections/epoch={self.current_epoch}_sample={idx:02d}", annotated_tensor
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to log image to TensorBoard: {e}")
+            # Add grid to TensorBoard
+            self.logger.experiment.add_image(
+                f"{self.current_stage}/detections_grid", image_grid, global_step=self.current_epoch
+            )
+
+            # Also save the grid to disk
+            grid_output_path = output_dir / f"epoch_{self.current_epoch:04d}_grid.jpg"
+            vutils.save_image(image_grid, grid_output_path, normalize=False)
 
 
 def model_arch_from_config(config: Config) -> tuple[nn.ModuleList, list[int]]:
