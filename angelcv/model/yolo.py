@@ -257,7 +257,18 @@ class YoloDetectionModel(pl.LightningModule):
 
         return detection_loss.total
 
-    def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> STEP_OUTPUT:
+    def _common_eval_step(self, batch: dict[str, torch.Tensor], batch_idx: int, stage: str) -> STEP_OUTPUT:
+        """
+        Common step for validation and test phases.
+
+        Args:
+            batch: Dictionary containing images and labels
+            batch_idx: Batch index
+            stage: Either "val" or "test"
+
+        Returns:
+            Total detection loss
+        """
         # Get predictions
         preds_feats_dict = self.forward(batch["images"])
 
@@ -269,10 +280,10 @@ class YoloDetectionModel(pl.LightningModule):
         # be of different size
         self.log_dict(
             {
-                "loss/total/val": detection_loss.total,  # NOTE: used for EarlyStopping
-                "loss/iou/val": detection_loss.iou,
-                "loss/clf/val": detection_loss.cls,
-                "loss/dfl/val": detection_loss.dfl,
+                f"loss/total/{stage}": detection_loss.total,
+                f"loss/iou/{stage}": detection_loss.iou,
+                f"loss/clf/{stage}": detection_loss.cls,
+                f"loss/dfl/{stage}": detection_loss.dfl,
             },  # default on_step=False, on_epoch=True
             batch_size=batch["images"].shape[0],
             sync_dist=True,  # to sync logging across all GPU workers (may have performance impact)
@@ -285,113 +296,71 @@ class YoloDetectionModel(pl.LightningModule):
         # Update mAP metric
         self.map_metric.update(formatted_predictions, formatted_targets)
 
-        # Save visualization samples for the validation set
-        if batch_idx == 0 and (self.current_epoch % self.vis_interval == 0 or self.current_epoch == 0):
+        # Save visualization samples for the validation set only
+        if (
+            stage == "val"
+            and batch_idx == 0
+            and (self.current_epoch % self.vis_interval == 0 or self.current_epoch == 0)
+        ):
             self._save_detection_visualizations(batch, preds_feats_dict)
 
         return detection_loss.total
 
+    def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> STEP_OUTPUT:
+        return self._common_eval_step(batch, batch_idx, "val")
+
     def test_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> STEP_OUTPUT:
-        # Get predictions
-        preds_feats_dict = self.forward(batch["images"])
+        return self._common_eval_step(batch, batch_idx, "test")
 
-        # Send the batch through the model and calculate the loss
-        detection_loss = self._calculate_loss(batch, preds_feats_dict)
+    def _common_eval_epoch_end(self, stage: str):
+        """
+        Common epoch end processing for validation and test phases.
 
-        # Log metrics with test/ prefix
+        Args:
+            stage: Either "val" or "test"
+        """
+        map_dict = self.map_metric.compute()
+
+        # Add val_map for ModelCheckpoint compatibility only for validation
+        if stage == "val":
+            self.log("val_map", map_dict["map"], on_epoch=True, logger=False, sync_dist=False)
+
+        # Log different MAP values
         self.log_dict(
             {
-                "loss/total/test": detection_loss.total,
-                "loss/iou/test": detection_loss.iou,
-                "loss/clf/test": detection_loss.cls,
-                "loss/dfl/test": detection_loss.dfl,
+                f"map/50-95/{stage}": map_dict["map"],
+                f"map/50/{stage}": map_dict["map_50"],
+                f"map/75/{stage}": map_dict["map_75"],
+                f"map/small/{stage}": map_dict["map_small"],
+                f"map/medium/{stage}": map_dict["map_medium"],
+                f"map/large/{stage}": map_dict["map_large"],
             },
-            batch_size=batch["images"].shape[0],
-            sync_dist=True,  # to sync logging across all GPU workers
+            on_epoch=True,
+            sync_dist=False,  # MeanAveragePrecision handles synchronization internally
         )
 
-        # Format predictions and targets for mAP calculation
-        formatted_predictions = format_predictions(preds_feats_dict["predictions"].detach(), batch)
-        formatted_targets = format_targets(batch)
+        # Get the current values from the logged metrics
+        loss = self.trainer.callback_metrics.get(f"loss/total/{stage}")
+        loss_iou = self.trainer.callback_metrics.get(f"loss/iou/{stage}")
+        loss_clf = self.trainer.callback_metrics.get(f"loss/clf/{stage}")
+        loss_dfl = self.trainer.callback_metrics.get(f"loss/dfl/{stage}")
 
-        # Update mAP metric
-        self.map_metric.update(formatted_predictions, formatted_targets)
+        # Print them in a formatted way
+        stage_title = "Validation" if stage == "val" else "Test"
+        logger.info(f"{stage_title} Epoch End:")
+        logger.info(f"Losses => Total: {loss:.3f} | IoU: {loss_iou:2.3f} | Clf: {loss_clf:2.3f} | Dfl: {loss_dfl:2.3f}")
+        logger.info(
+            f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
+        )
 
-        return detection_loss.total
+        # Reset metric states at the end of the epoch
+        self.map_metric.reset()  # TODO [LOW]: figure out if required
 
     def on_validation_epoch_end(self):
-        map_dict = self.map_metric.compute()
-
-        # Log different MAP values
-        # NOTE: "val_map" is just for ModelCheckpoint compatibility
-        self.log("val_map", map_dict["map"], on_epoch=True, logger=False, sync_dist=False)
-        self.log_dict(
-            {
-                "map/50-95/val": map_dict["map"],
-                "map/50/val": map_dict["map_50"],
-                "map/75/val": map_dict["map_75"],
-                "map/small/val": map_dict["map_small"],
-                "map/medium/val": map_dict["map_medium"],
-                "map/large/val": map_dict["map_large"],
-            },
-            on_epoch=True,
-            sync_dist=False,  # MeanAveragePrecision handles synchronization internally
-        )
-
-        # Get the current values from the logged metrics
-        val_loss = self.trainer.callback_metrics.get("loss/total/val")
-        val_loss_iou = self.trainer.callback_metrics.get("loss/iou/val")
-        val_loss_clf = self.trainer.callback_metrics.get("loss/clf/val")
-        val_loss_dfl = self.trainer.callback_metrics.get("loss/dfl/val")
-
-        # Print them in a formatted way
-        logger.info("Validation Epoch End:")
-        logger.info(
-            f"Losses => Total: {val_loss:.3f} | IoU: {val_loss_iou:2.3f} | Clf: {val_loss_clf:2.3f} |"
-            f" Dfl: {val_loss_dfl:2.3f}"
-        )
-        logger.info(
-            f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
-        )
-
-        # Reset metric states at the end of the epoch
-        self.map_metric.reset()  # TODO [LOW]: figure out if required
+        self._common_eval_epoch_end("val")
 
     def on_test_epoch_end(self):
-        map_dict = self.map_metric.compute()
-
-        # Log different MAP values
-        self.log_dict(
-            {
-                "map/50-95/test": map_dict["map"],
-                "map/50/test": map_dict["map_50"],
-                "map/75/test": map_dict["map_75"],
-                "map/small/test": map_dict["map_small"],
-                "map/medium/test": map_dict["map_medium"],
-                "map/large/test": map_dict["map_large"],
-            },
-            on_epoch=True,
-            sync_dist=False,  # MeanAveragePrecision handles synchronization internally
-        )
-
-        # Get the current values from the logged metrics
-        test_loss = self.trainer.callback_metrics.get("loss/total/test")
-        test_loss_iou = self.trainer.callback_metrics.get("loss/iou/test")
-        test_loss_clf = self.trainer.callback_metrics.get("loss/clf/test")
-        test_loss_dfl = self.trainer.callback_metrics.get("loss/dfl/test")
-
-        # Print them in a formatted way
-        logger.info("Test Epoch End:")
-        logger.info(
-            f"Losses => Total: {test_loss:.3f} | IoU:   {test_loss_iou:2.3f} | Clf: {test_loss_clf:2.3f} | "
-            f"Dfl: {test_loss_dfl:2.3f}"
-        )
-        logger.info(
-            f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
-        )
-
-        # Reset metric states at the end of the epoch
-        self.map_metric.reset()  # TODO [LOW]: figure out if required
+        self._common_eval_epoch_end("test")
 
     def configure_optimizers(self):
         # Calculate necessary constants
