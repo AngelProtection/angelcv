@@ -322,9 +322,9 @@ class YoloDetectionModel(pl.LightningModule):
     def on_validation_epoch_end(self):
         map_dict = self.map_metric.compute()
 
-        # Log different MAP values with sync_dist=True for multi-GPU compatibility
+        # Log different MAP values
         # NOTE: "val_map" is just for ModelCheckpoint compatibility
-        self.log("val_map", map_dict["map"], on_epoch=True, logger=False, sync_dist=True)
+        self.log("val_map", map_dict["map"], on_epoch=True, logger=False, sync_dist=False)
         self.log_dict(
             {
                 "map/50-95/val": map_dict["map"],
@@ -335,7 +335,7 @@ class YoloDetectionModel(pl.LightningModule):
                 "map/large/val": map_dict["map_large"],
             },
             on_epoch=True,
-            sync_dist=True,
+            sync_dist=False,  # MeanAveragePrecision handles synchronization internally
         )
 
         # Get the current values from the logged metrics
@@ -371,7 +371,7 @@ class YoloDetectionModel(pl.LightningModule):
                 "map/large/test": map_dict["map_large"],
             },
             on_epoch=True,
-            sync_dist=True,
+            sync_dist=False,  # MeanAveragePrecision handles synchronization internally
         )
 
         # Get the current values from the logged metrics
