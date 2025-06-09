@@ -335,7 +335,7 @@ class YoloDetectionModel(pl.LightningModule):
         val_loss = self.trainer.callback_metrics.get("loss/total/val")
         val_loss_iou = self.trainer.callback_metrics.get("loss/iou/val")
         val_loss_clf = self.trainer.callback_metrics.get("loss/clf/val")
-        val_loss_dlf = self.trainer.callback_metrics.get("loss/dfl/val")
+        val_loss_dfl = self.trainer.callback_metrics.get("loss/dfl/val")
 
         # Print them in a formatted way
         logger.info("Validation Epoch End:")
