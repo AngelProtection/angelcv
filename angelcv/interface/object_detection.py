@@ -647,7 +647,7 @@ def test_train():
         precision="16-mixed",  # Better performance, especially for multi-GPU
         sync_batchnorm=True,  # Important for multi-GPU training
     )
-    logger.info(f"{results_train}")
+    logger.info(f"Train results: {results_train}")
 
 
 def test_testset():
@@ -655,7 +655,7 @@ def test_testset():
 
     # Test model
     results_test = model.test(dataset="coco.yaml", batch_size=8)
-    print(results_test)
+    logger.info(f"Test results: {results_test}")
 
 
 if __name__ == "__main__":
