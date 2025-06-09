@@ -986,7 +986,7 @@ class v10Detect(nn.Module):  # noqa: N801
         if self.num_classes == num_classes:
             return
 
-        # NOTE: the dlf and reg heads are not re-initialized as they are independent of class count
+        # NOTE: the dfl and reg heads are not re-initialized as they are independent of class count
         # and the cls heads are re-initialized with the new number of classes (with the initial biases)
         self._initialize_cls_heads()
         self._initialize_cls_heads_biases()

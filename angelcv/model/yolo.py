@@ -241,7 +241,7 @@ class YoloDetectionModel(pl.LightningModule):
         avg_train_loss = sum(self.loss_buffers["loss/total/train"]) / len(self.loss_buffers["loss/total/train"])
         avg_train_loss_iou = sum(self.loss_buffers["loss/iou/train"]) / len(self.loss_buffers["loss/iou/train"])
         avg_train_loss_clf = sum(self.loss_buffers["loss/clf/train"]) / len(self.loss_buffers["loss/clf/train"])
-        avg_train_loss_dlf = sum(self.loss_buffers["loss/dfl/train"]) / len(self.loss_buffers["loss/dfl/train"])
+        avg_train_loss_dfl = sum(self.loss_buffers["loss/dfl/train"]) / len(self.loss_buffers["loss/dfl/train"])
 
         # Log the rolling averages to the progress bar
         self.log_dict(
@@ -249,7 +249,7 @@ class YoloDetectionModel(pl.LightningModule):
                 "loss": avg_train_loss,
                 "iou": avg_train_loss_iou,
                 "clf": avg_train_loss_clf,
-                "dfl": avg_train_loss_dlf,
+                "dfl": avg_train_loss_dfl,
             },
             prog_bar=True,
             logger=False,  # Don't log to TensorBoard (just for the progress bar)
@@ -341,7 +341,7 @@ class YoloDetectionModel(pl.LightningModule):
         logger.info("Validation Epoch End:")
         logger.info(
             f"Losses => Total: {val_loss:.3f} | IoU: {val_loss_iou:2.3f} | Clf: {val_loss_clf:2.3f} |"
-            f" Dlf: {val_loss_dlf:2.3f}"
+            f" Dfl: {val_loss_dfl:2.3f}"
         )
         logger.info(
             f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
@@ -365,12 +365,12 @@ class YoloDetectionModel(pl.LightningModule):
         test_loss = self.trainer.callback_metrics.get("loss/total/test")
         test_loss_iou = self.trainer.callback_metrics.get("loss/iou/test")
         test_loss_clf = self.trainer.callback_metrics.get("loss/clf/test")
-        test_loss_dlf = self.trainer.callback_metrics.get("loss/dfl/test")
+        test_loss_dfl = self.trainer.callback_metrics.get("loss/dfl/test")
 
         # Print them in a formatted way
         logger.info("Test Epoch End:")
         logger.info(f"test_loss: {test_loss:.3f}")
-        logger.info(f"Losses => IoU:   {test_loss_iou:2.3f} | Clf: {test_loss_clf:2.3f} | Dlf: {test_loss_dlf:2.3f}")
+        logger.info(f"Losses => IoU:   {test_loss_iou:2.3f} | Clf: {test_loss_clf:2.3f} | Dfl: {test_loss_dfl:2.3f}")
         logger.info(
             f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
         )
