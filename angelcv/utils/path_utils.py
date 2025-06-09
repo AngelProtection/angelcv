@@ -136,7 +136,7 @@ def _check_and_download_from_s3(file_name: str) -> Path | None:
         for page in paginator.paginate(Bucket=s3_bucket, Prefix=""):
             if "Contents" in page:
                 for obj in page["Contents"]:
-                    print(obj["Key"])
+                    logger.debug(f"S3 object: {obj['Key']}")
                     if obj["Key"] == file_name:
                         file_exists = True
                         break
