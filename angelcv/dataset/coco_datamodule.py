@@ -15,6 +15,9 @@ from tqdm import tqdm
 
 from angelcv.config.config_registry import Config
 from angelcv.dataset.augmentation import default_train_transforms, default_val_transforms
+from angelcv.utils.logging_manager import get_logger
+
+logger = get_logger(__name__)
 
 
 class DownloadProgressBar(tqdm):
@@ -74,7 +77,7 @@ class CocoDetection(Dataset):
         if np.any((xyxy_norm_bboxes > 1.0) | (xyxy_norm_bboxes <= 0.0)):
             if np.any((xyxy_norm_bboxes - eps > 1.0) | (xyxy_norm_bboxes + eps <= 0.0)):
                 out_of_bounds = xyxy_norm_bboxes[(xyxy_norm_bboxes > 1.0) | (xyxy_norm_bboxes <= 0.0)]
-                print(f"WARNING: bbox coordinate out of bounds: {out_of_bounds}")
+                logger.warning(f"bbox coordinate out of bounds: {out_of_bounds}")
 
             # Clip values to ensure they're between 0 and 1
             # NOTE: eps is required instead of 0, because albumentations requires the yolo bboxes to be (0, 1]
@@ -187,12 +190,12 @@ class CocoDataModule(L.LightningDataModule):
                 if not component_path.exists():
                     download_dir.mkdir(parents=True, exist_ok=True)
                     zip_file = download_dir / f"{folder_name}.zip"
-                    print(f"Downloading {folder_name}...")
+                    logger.info(f"Downloading {folder_name}...")
                     with DownloadProgressBar(unit="B", unit_scale=True, miniters=1, desc=folder_name) as t:
                         urllib.request.urlretrieve(url, zip_file, reporthook=t.update_to)  # noqa: S310
 
                     # Extract files
-                    print(f"Extracting {folder_name}...")
+                    logger.info(f"Extracting {folder_name}...")
                     with zipfile.ZipFile(zip_file, "r") as zip_ref:
                         zip_ref.extractall(component_path)
 
@@ -374,30 +377,24 @@ if __name__ == "__main__":
     test_loader = coco_dm.test_dataloader()
 
     # Lengths
-    print("Train loader length:", len(train_loader))
-    print("Validation loader length:", len(val_loader))
-    print("Test loader length:", len(test_loader))
+    logger.info(f"Train loader length: {len(train_loader)}")
+    logger.info(f"Validation loader length: {len(val_loader)}")
+    logger.info(f"Test loader length: {len(test_loader)}")
 
     # Samples shape
     first_train_batch = next(iter(train_loader))
     first_val_batch = next(iter(val_loader))
     first_test_batch = next(iter(test_loader))
 
-    print(
-        "Train first sample shape:",
-        first_train_batch["images"].shape,
-        first_train_batch["boxes"].shape,
-        first_train_batch["labels"].shape,
+    logger.info(
+        f"Train first sample shape: {first_train_batch['images'].shape}, {first_train_batch['boxes'].shape}, "
+        f"{first_train_batch['labels'].shape}"
     )
-    print(
-        "Validation first sample shape:",
-        first_val_batch["images"].shape,
-        first_val_batch["boxes"].shape,
-        first_val_batch["labels"].shape,
+    logger.info(
+        f"Validation first sample shape: {first_val_batch['images'].shape}, {first_val_batch['boxes'].shape}, "
+        f"{first_val_batch['labels'].shape}"
     )
-    print(
-        "Test first sample shape:",
-        first_test_batch["images"].shape,
-        first_test_batch["boxes"].shape,
-        first_test_batch["labels"].shape,
+    logger.info(
+        f"Test first sample shape: {first_test_batch['images'].shape}, {first_test_batch['boxes'].shape}, "
+        f"{first_test_batch['labels'].shape}"
     )
