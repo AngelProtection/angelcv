@@ -322,14 +322,21 @@ class YoloDetectionModel(pl.LightningModule):
     def on_validation_epoch_end(self):
         map_dict = self.map_metric.compute()
 
-        # Log different MAP values
-        self.log("val_map", map_dict["map"], on_epoch=True)  # for ModelCheckpoint compatibility
-        self.log("map/50-95/val", map_dict["map"], on_epoch=True)
-        self.log("map/50/val", map_dict["map_50"], on_epoch=True)
-        self.log("map/75/val", map_dict["map_75"], on_epoch=True)
-        self.log("map/small/val", map_dict["map_small"], on_epoch=True)
-        self.log("map/medium/val", map_dict["map_medium"], on_epoch=True)
-        self.log("map/large/val", map_dict["map_large"], on_epoch=True)
+        # Log different MAP values with sync_dist=True for multi-GPU compatibility
+        # NOTE: "val_map" is just for ModelCheckpoint compatibility
+        self.log("val_map", map_dict["map"], on_epoch=True, logger=False, sync_dist=True)
+        self.log_dict(
+            {
+                "map/50-95/val": map_dict["map"],
+                "map/50/val": map_dict["map_50"],
+                "map/75/val": map_dict["map_75"],
+                "map/small/val": map_dict["map_small"],
+                "map/medium/val": map_dict["map_medium"],
+                "map/large/val": map_dict["map_large"],
+            },
+            on_epoch=True,
+            sync_dist=True,
+        )
 
         # Get the current values from the logged metrics
         val_loss = self.trainer.callback_metrics.get("loss/total/val")
