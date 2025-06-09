@@ -338,10 +338,12 @@ class YoloDetectionModel(pl.LightningModule):
         val_loss_dlf = self.trainer.callback_metrics.get("loss/dfl/val")
 
         # Print them in a formatted way
-        print("Validation Epoch End:")
-        print(f"val_loss: {val_loss:.3f}")
-        print(f"Losses => IoU:   {val_loss_iou:2.3f} | Clf: {val_loss_clf:2.3f} | Dlf: {val_loss_dlf:2.3f}")
-        print(
+        logger.info("Validation Epoch End:")
+        logger.info(
+            f"Losses => Total: {val_loss:.3f} | IoU: {val_loss_iou:2.3f} | Clf: {val_loss_clf:2.3f} |"
+            f" Dlf: {val_loss_dlf:2.3f}"
+        )
+        logger.info(
             f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
         )
 
@@ -366,10 +368,10 @@ class YoloDetectionModel(pl.LightningModule):
         test_loss_dlf = self.trainer.callback_metrics.get("loss/dfl/test")
 
         # Print them in a formatted way
-        print("Test Epoch End:")
-        print(f"test_loss: {test_loss:.3f}")
-        print(f"Losses => IoU:   {test_loss_iou:2.3f} | Clf: {test_loss_clf:2.3f} | Dlf: {test_loss_dlf:2.3f}")
-        print(
+        logger.info("Test Epoch End:")
+        logger.info(f"test_loss: {test_loss:.3f}")
+        logger.info(f"Losses => IoU:   {test_loss_iou:2.3f} | Clf: {test_loss_clf:2.3f} | Dlf: {test_loss_dlf:2.3f}")
+        logger.info(
             f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
         )
 
@@ -771,4 +773,4 @@ if __name__ == "__main__":
     sample_size = 640
     sample_batch = torch.zeros(1, 3, sample_size, sample_size)
     output = model.forward(sample_batch)
-    print(output)
+    logger.info(f"{output}")
