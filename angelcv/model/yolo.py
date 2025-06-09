@@ -290,6 +290,10 @@ class YoloDetectionModel(pl.LightningModule):
             sync_dist=True,  # to sync logging across all GPU workers (may have performance impact)
         )
 
+        # NOTE: "val_loss" is just for ModelCheckpoint compatibility only for validation
+        if stage == "val":
+            self.log("val_loss", detection_loss.total, on_epoch=True, logger=False, sync_dist=True)
+
         # Format predictions and targets for mAP calculation
         formatted_predictions = format_predictions(preds_feats_dict["predictions"].detach(), batch)
         formatted_targets = format_targets(batch)
