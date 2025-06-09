@@ -233,24 +233,24 @@ class ConfigManager:
 
 
 if __name__ == "__main__":
-    from pprint import pprint
+    import pprint
 
     config_1 = ConfigManager.upsert_config(
         model_file="yolov10s.yaml",
         # dataset_file="coco.yaml",
         # overrides=["model.channels_scale=1.0"],
     )
-    # pprint(config_1)
+    # logger.info(f"{pprint.pformat(config_1)}")
 
     # Get the same config object again but update it with new settings
     config_2 = ConfigManager.upsert_config(
         model_file="yolov10n.yaml",
         dataset_file="coco.yaml",
     )
-    # pprint(config_2)
+    # logger.info(f"{pprint.pformat(config_2)}")
 
-    print("config_1.model.channels_scale", config_1.model.channels_scale)
-    print("config_2.model.channels_scale", config_2.model.channels_scale)
+    logger.info(f"config_1.model.channels_scale: {config_1.model.channels_scale}")
+    logger.info(f"config_2.model.channels_scale: {config_2.model.channels_scale}")
 
     # Example of using wildcard config merge
     config_3 = ConfigManager.wildcard_config_merge(
@@ -260,10 +260,10 @@ if __name__ == "__main__":
             "image_size": 512,  # updates train.data.image_size, validation.data.image_size, and root image_size
         },
     )
-    print("config_1.model.channels_scale:", config_1.model.channels_scale)
-    print("config_2.model.channels_scale:", config_2.model.channels_scale)
-    print("config_3.model.channels_scale:", config_3.model.channels_scale)
-    print("config_3.train.data.batch_size:", config_3.train.data.batch_size)
-    print("config_3.image_size:", config_3.image_size)
-    print("config_3.train.data.image_size:", config_3.train.data.image_size)
-    print("config_3.validation.data.image_size:", config_3.validation.data.image_size)
+    logger.info(f"config_1.model.channels_scale: {config_1.model.channels_scale}")
+    logger.info(f"config_2.model.channels_scale: {config_2.model.channels_scale}")
+    logger.info(f"config_3.model.channels_scale: {config_3.model.channels_scale}")
+    logger.info(f"config_3.train.data.batch_size: {config_3.train.data.batch_size}")
+    logger.info(f"config_3.image_size: {config_3.image_size}")
+    logger.info(f"config_3.train.data.image_size: {config_3.train.data.image_size}")
+    logger.info(f"config_3.validation.data.image_size: {config_3.validation.data.image_size}")
