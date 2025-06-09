@@ -246,12 +246,13 @@ class YoloDetectionModel(pl.LightningModule):
         # Log the rolling averages to the progress bar
         self.log_dict(
             {
-                "loss/total/train_ra": avg_train_loss,
-                "loss/iou/train_ra": avg_train_loss_iou,
-                "loss/clf/train_ra": avg_train_loss_clf,
-                "loss/dfl/train_ra": avg_train_loss_dlf,
+                "loss": avg_train_loss,
+                "iou": avg_train_loss_iou,
+                "clf": avg_train_loss_clf,
+                "dfl": avg_train_loss_dlf,
             },
             prog_bar=True,
+            logger=False,  # Don't log to TensorBoard (just for the progress bar)
         )
 
         return detection_loss.total
