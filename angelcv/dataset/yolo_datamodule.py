@@ -320,14 +320,14 @@ if __name__ == "__main__":
     val_loader = yolo_dm.val_dataloader()
     test_loader = yolo_dm.test_dataloader()
 
-    print("Train loader length:", len(train_loader))
-    print("Validation loader length:", len(val_loader))
+    logger.info(f"Train loader length: {len(train_loader)}")
+    logger.info(f"Validation loader length: {len(val_loader)}")
     if test_loader:
-        print("Test loader length:", len(test_loader))
+        logger.info(f"Test loader length: {len(test_loader)}")
     else:
-        print("Test loader not available.")
+        logger.info("Test loader not available.")
 
     first_train_batch = next(iter(train_loader))
-    print("Train batch images shape:", first_train_batch["images"].shape)
-    print("Train batch boxes shape:", first_train_batch["boxes"].shape)
-    print("Train batch labels shape:", first_train_batch["labels"].shape)
+    logger.info(f"Train batch images shape: {first_train_batch['images'].shape}")
+    logger.info(f"Train batch boxes shape: {first_train_batch['boxes'].shape}")
+    logger.info(f"Train batch labels shape: {first_train_batch['labels'].shape}")
