@@ -361,12 +361,18 @@ class YoloDetectionModel(pl.LightningModule):
         map_dict = self.map_metric.compute()
 
         # Log different MAP values
-        self.log("map/50-95/test", map_dict["map"], on_epoch=True)
-        self.log("map/50/test", map_dict["map_50"], on_epoch=True)
-        self.log("map/75/test", map_dict["map_75"], on_epoch=True)
-        self.log("map/small/test", map_dict["map_small"], on_epoch=True)
-        self.log("map/medium/test", map_dict["map_medium"], on_epoch=True)
-        self.log("map/large/test", map_dict["map_large"], on_epoch=True)
+        self.log_dict(
+            {
+                "map/50-95/test": map_dict["map"],
+                "map/50/test": map_dict["map_50"],
+                "map/75/test": map_dict["map_75"],
+                "map/small/test": map_dict["map_small"],
+                "map/medium/test": map_dict["map_medium"],
+                "map/large/test": map_dict["map_large"],
+            },
+            on_epoch=True,
+            sync_dist=True,
+        )
 
         # Get the current values from the logged metrics
         test_loss = self.trainer.callback_metrics.get("loss/total/test")
@@ -376,8 +382,10 @@ class YoloDetectionModel(pl.LightningModule):
 
         # Print them in a formatted way
         logger.info("Test Epoch End:")
-        logger.info(f"test_loss: {test_loss:.3f}")
-        logger.info(f"Losses => IoU:   {test_loss_iou:2.3f} | Clf: {test_loss_clf:2.3f} | Dfl: {test_loss_dfl:2.3f}")
+        logger.info(
+            f"Losses => Total: {test_loss:.3f} | IoU:   {test_loss_iou:2.3f} | Clf: {test_loss_clf:2.3f} | "
+            f"Dfl: {test_loss_dfl:2.3f}"
+        )
         logger.info(
             f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
         )
