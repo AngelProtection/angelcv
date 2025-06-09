@@ -636,7 +636,7 @@ def test_train():
     }
 
     local_rank = int(os.environ.get("LOCAL_RANK", -1))
-    print(f"🏋️ About to call model.train() in process LOCAL_RANK={local_rank}")
+    logger.info(f"🏋️ About to call model.train() in process LOCAL_RANK={local_rank}")
     results_train = model.train(
         dataset=dataset,
         max_epochs=2,
@@ -647,7 +647,7 @@ def test_train():
         precision="16-mixed",  # Better performance, especially for multi-GPU
         sync_batchnorm=True,  # Important for multi-GPU training
     )
-    print(results_train)
+    logger.info(f"{results_train}")
 
 
 def test_testset():

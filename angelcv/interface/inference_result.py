@@ -391,11 +391,11 @@ if __name__ == "__main__":
     )
 
     # Example 1: Display the annotated image
-    print("Displaying annotated image. Press any key to continue...")
+    logger.info("Displaying annotated image. Press any key to continue...")
     inference_result.show()
 
     """
     # Example 2: Save the annotated image
     output_path = inference_result.save("detection_demo.jpg")
-    print(f"Saved annotated image to {output_path}")
+    logger.info(f"Saved annotated image to {output_path}")
     """
