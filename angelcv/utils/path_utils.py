@@ -167,9 +167,9 @@ def _check_and_download_from_s3(file_name: str) -> Path | None:
 def test_resolve_file_path(input_str: str):
     try:
         result = resolve_file_path(input_str)
-        print(f"Searching for {input_str}, result: {result}")
+        logger.info(f"Searching for {input_str}, result: {result}")
     except FileNotFoundError as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
 
 
 if __name__ == "__main__":
