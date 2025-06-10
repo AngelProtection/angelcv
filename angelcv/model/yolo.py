@@ -117,6 +117,10 @@ class YoloDetectionModel(pl.LightningModule):
 
         return current_feats
 
+    def warmup(self, image_size: int = 640):
+        """Warmup the model by running a forward pass with random input."""
+        self.forward(torch.randn(1, 3, image_size, image_size).to(self.device))
+
     def _initialize_model_weights(self) -> None:
         """
         Initialize model weights using standard techniques for YOLO architectures.
