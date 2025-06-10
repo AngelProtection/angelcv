@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import re
 import time
-from typing import Any
+from typing import Any, Literal
 
 import lightning as L
 from lightning.pytorch.callbacks import (
