@@ -317,6 +317,7 @@ class ObjectDetectionModel:
                 save_top_k=3,
                 save_last=True,
                 auto_insert_metric_name=True,
+                save_weights_only=True,  # don't save optimizer state
             ),
             LearningRateMonitor(logging_interval="step"),
             DeviceStatsMonitor(),
