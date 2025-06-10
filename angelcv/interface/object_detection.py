@@ -60,7 +60,7 @@ class ObjectDetectionModel:
         ```
     """
 
-    def __init__(self, model_source: Path | str):
+    def __init__(self, model_source: Path | str, device: Literal["auto", "cpu", "cuda"] | torch.device = "auto"):
         """
         Initializes the Object Detection Model.
 
@@ -68,6 +68,7 @@ class ObjectDetectionModel:
             model_source: Path to a model config file or checkpoint file.
                         If .yaml, loads a fresh model configuration - can be in angelcv/config/dataset/ or absolute path
                         If .ckpt or .pt, loads weights from the checkpoint - in project root or absolute path
+            device: Device to use for inference.
         """
         # This function will find the actual path of the model file and download it from S3 if it exists
         model_source_abs_path = resolve_file_path(model_source)
@@ -82,6 +83,9 @@ class ObjectDetectionModel:
             # Otherwise use model_source as the config file (i.e. .yaml)
             config = ConfigManager.upsert_config(model_file=model_source_abs_path)
             self.model = YoloDetectionModel(config=config)
+
+        # Set model device
+        self.to(device)
 
         logger.info(f"Initialized model: {self.model.__class__.__name__}")
 
@@ -197,6 +201,21 @@ class ObjectDetectionModel:
             )
 
         return results
+
+    def to(self, device: Literal["auto", "cpu", "cuda"] | torch.device = "auto") -> None:
+        """
+        Moves the model to the specified device. Used for inference.
+        """
+        if isinstance(device, str):
+            if device == "auto":
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+            self.device = torch.device(device)
+        elif isinstance(device, torch.device):
+            self.device = device
+        else:
+            raise ValueError(f"Invalid device: {device}")
+
+        self.model.to(self.device)
 
     def _postprocess_detections(self, model_output: torch.Tensor, confidence_th: float = 0.3) -> torch.Tensor:
         """
