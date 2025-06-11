@@ -117,12 +117,11 @@ class ImageCoordinateMapper:
         return original
 
 
-def preprocess_sources(
+def load_images(
     source: SourceType | list[SourceType],
-    image_size: int | None = None,
-) -> tuple[list[torch.Tensor], list[np.ndarray], list[str], list[ImageCoordinateMapper]]:
+) -> tuple[list[np.ndarray], list[str]]:
     """
-    Preprocesses various input sources for model inference.
+    Loads various input sources and converts them to numpy arrays.
 
     Args:
         source: Source for detection in various formats:
@@ -132,50 +131,68 @@ def preprocess_sources(
             - np.ndarray: Image array in [H,W,C] format
             - PIL.Image.Image: PIL Image object
             - list: List containing any combination of the above
-        image_size: Size to resize images to (longest edge)
 
     Returns:
         tuple containing:
-        - List of preprocessed tensors ready for model input
-        - List of original images
+        - List of numpy arrays representing the original images in [H,W,C] format, 0-255, RGB
         - List of source identifiers (paths, URLs, or type descriptors)
-        - List of ImageCoordinateMapper objects for mapping between original and transformed coordinates
     """
     # Ensure source is a list
     sources = [source] if not isinstance(source, list) else source
 
-    processed_tensors = []
     original_images = []
     source_identifiers = []
-    img_coordinate_mapper_list = []
 
     for src in sources:
         if isinstance(src, (str, Path)):
-            tensor, orig_img, source_identifier, img_coordinate_mapper = _process_path_source(src, image_size)
+            orig_img, source_identifier = _load_path_source(src)
         elif isinstance(src, Image.Image):
-            tensor, orig_img, img_coordinate_mapper = _process_pil_image(src, image_size)
+            orig_img = _load_pil_image(src)
             source_identifier = "pil_image"
         elif isinstance(src, torch.Tensor):
-            tensor, orig_img, img_coordinate_mapper = _process_tensor(src)
+            orig_img = _load_tensor(src)
             source_identifier = "tensor"
         elif isinstance(src, np.ndarray):
-            tensor, orig_img, img_coordinate_mapper = _process_numpy_array(src, image_size)
+            orig_img = _load_numpy_array(src)
             source_identifier = "array"
         else:
             raise ValueError(f"Unsupported source type: {type(src)}")
 
-        processed_tensors.append(tensor)
         original_images.append(orig_img)
         source_identifiers.append(source_identifier)
+
+    return original_images, source_identifiers
+
+
+def preprocess_for_inference(
+    images: list[np.ndarray],
+    image_size: int | None = None,
+) -> tuple[list[torch.Tensor], list[ImageCoordinateMapper]]:
+    """
+    Preprocesses numpy arrays for model inference by applying resizing, normalization, and conversion to tensors.
+
+    Args:
+        images: List of numpy arrays in [H,W,C] format with RGB channels
+        image_size: Size of the longest side of the image to be resized to
+
+    Returns:
+        tuple containing:
+        - List of preprocessed tensors ready for model input in [1,C,H,W] format, 0-1, RGB
+        - List of ImageCoordinateMapper objects for mapping between original and transformed coordinates
+    """
+    processed_tensors = []
+    img_coordinate_mapper_list = []
+
+    for img in images:
+        tensor, img_coordinate_mapper = transform_image_for_inference(img, image_size=image_size)
+        processed_tensors.append(tensor)
         img_coordinate_mapper_list.append(img_coordinate_mapper)
 
-    return processed_tensors, original_images, source_identifiers, img_coordinate_mapper_list
+    return processed_tensors, img_coordinate_mapper_list
 
 
-def _process_path_source(
-    src: str | Path, image_size: int | None = None
-) -> tuple[torch.Tensor, np.ndarray, str, ImageCoordinateMapper]:
-    """Process a source that is a file path or URL."""
+def _load_path_source(src: str | Path) -> tuple[np.ndarray, str]:
+    """Load a source that is a file path or URL."""
     path = str(src)
 
     try:
@@ -189,61 +206,62 @@ def _process_path_source(
             img = Image.open(path).convert("RGB")
 
         numpy_img = np.array(img)
-        tensor, img_coordinate_mapper = transform_image_for_inference(numpy_img, image_size=image_size)
-        return tensor, numpy_img, path, img_coordinate_mapper
+        return numpy_img, path
 
     except Exception as e:
         source_type = "URL" if path.lower().startswith(("http://", "https://")) else "file"
         raise ValueError(f"Failed to load image from {source_type}: {path}. Error: {str(e)}") from e
 
 
-def _process_pil_image(
-    src: Image.Image, image_size: int | None = None
-) -> tuple[torch.Tensor, np.ndarray, ImageCoordinateMapper]:
-    """Process a source that is a PIL Image."""
+def _load_pil_image(src: Image.Image) -> np.ndarray:
+    """Load a source that is a PIL Image."""
     if src.mode != "RGB":
         src = src.convert("RGB")
     numpy_img = np.array(src)
-    tensor, img_coordinate_mapper = transform_image_for_inference(numpy_img, image_size=image_size)
-    return tensor, numpy_img, img_coordinate_mapper
+    return numpy_img
 
 
-def _process_tensor(src: torch.Tensor) -> tuple[torch.Tensor, np.ndarray, ImageCoordinateMapper]:
-    """Process a source that is already a tensor."""
-    # Add batch dimension if needed
-    if src.dim() == 3:
-        src = src.unsqueeze(0)
-
+def _load_tensor(src: torch.Tensor) -> np.ndarray:
+    """Load a source that is already a tensor."""
     # Convert to CPU for numpy conversion in case it's on GPU
     original_img = src.cpu()
+
+    # Add batch dimension if needed
+    if original_img.dim() == 3:
+        original_img = original_img.unsqueeze(0)
+
     if original_img.shape[1] == 3:  # If tensor is in [B,C,H,W] format
         original_img = rearrange(original_img, "b c h w -> b h w c").numpy()
 
     # Extract the image (remove batch dimension if batch size is 1)
     numpy_img = original_img[0] if original_img.shape[0] == 1 else original_img
 
-    # For tensor inputs, we assume it's already properly processed
-    h, w = src.shape[2:4]
-    img_coordinate_mapper = ImageCoordinateMapper(
-        original_width=w,
-        original_height=h,
-        transformed_width=w,
-        transformed_height=h,
-        scale_x=1.0,
-        scale_y=1.0,
-        padding_x=0,
-        padding_y=0,
-    )
+    # Ensure proper range and data type
+    if numpy_img.dtype != np.uint8:
+        # If normalized [0,1], convert to [0,255]
+        if numpy_img.max() <= 1.0:
+            numpy_img = (numpy_img * 255).astype(np.uint8)
+        else:
+            numpy_img = numpy_img.astype(np.uint8)
 
-    return src, numpy_img, img_coordinate_mapper
+    return numpy_img
 
 
-def _process_numpy_array(
-    src: np.ndarray, image_size: int | None = None
-) -> tuple[torch.Tensor, np.ndarray, ImageCoordinateMapper]:
-    """Process a source that is a numpy array."""
-    tensor, img_coordinate_mapper = transform_image_for_inference(src, image_size=image_size)
-    return tensor, src, img_coordinate_mapper
+def _load_numpy_array(src: np.ndarray) -> np.ndarray:
+    """Load a source that is a numpy array."""
+    # Ensure proper shape [H,W,C]
+    if src.ndim == 3 and src.shape[0] == 3:  # If in [C,H,W] format
+        src = np.transpose(src, (1, 2, 0))
+
+    # Ensure proper range and data type
+    if src.dtype != np.uint8:
+        # If normalized [0,1], convert to [0,255]
+        if src.max() <= 1.0:
+            src = (src * 255).astype(np.uint8)
+        else:
+            src = src.astype(np.uint8)
+
+    return src
 
 
 def transform_image_for_inference(
@@ -322,9 +340,28 @@ if __name__ == "__main__":
     mixed_sources = [
         Path("angelcv/images/city.jpg"),  # path
         "https://github.com/pytorch/hub/raw/master/images/dog.jpg",  # url
+        np.array(Image.open("angelcv/images/city.jpg")),  # numpy array
+        torch.randn(3, 640, 640),  # tensor
+        Image.open("angelcv/images/city.jpg"),  # PIL image
     ]
     start = time()
-    tensors1, images1, identifiers1, img_coordinate_mapper1 = preprocess_sources(mixed_sources, image_size=image_size)
-    print(f"✓ Mixed list: {len(tensors1)} tensors processed in {time() - start:.3f}s")
-    for i, (tensor, identifier) in enumerate(zip(tensors1, identifiers1)):
+
+    # Load images first
+    images, identifiers = load_images(mixed_sources)
+    load_time = time() - start
+    print(f"✓ Loading: {len(images)} images loaded in {load_time:.3f}s")
+    for i, (img, identifier) in enumerate(zip(images, identifiers)):
+        print(f"  - Source {i + 1}: {identifier}, Shape: {img.shape}")
+
+    # Then preprocess for inference
+    start = time()
+    tensors, mappers = preprocess_for_inference(images, image_size=image_size)
+    preprocess_time = time() - start
+    print(f"✓ Preprocessing: {len(tensors)} tensors processed in {preprocess_time:.3f}s")
+
+    for i, (tensor, identifier) in enumerate(zip(tensors, identifiers)):
         print(f"  - Source {i + 1}: {identifier}, Shape: {tensor.shape}")
+
+    print(
+        f"✓ Total time: {load_time + preprocess_time:.3f}s (load: {load_time:.3f}s, preprocess: {preprocess_time:.3f}s)"
+    )

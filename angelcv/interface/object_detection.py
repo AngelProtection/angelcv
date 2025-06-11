@@ -25,7 +25,7 @@ from angelcv.interface.inference_result import InferenceResult
 from angelcv.model.yolo import YoloDetectionModel
 from angelcv.utils.logging_manager import get_logger, set_experiment_dir
 from angelcv.utils.path_utils import CHECKPOINT_FILE_EXTENSIONS, resolve_file_path
-from angelcv.utils.source_utils import preprocess_sources
+from angelcv.utils.source_utils import load_images, preprocess_for_inference
 
 # Configure logging
 logger = get_logger(__name__)
@@ -136,10 +136,15 @@ class ObjectDetectionModel:
         # Set model to evaluation mode
         self.model.eval()
 
-        # Process input sources
+        # Load input sources
+        load_start_time = time.perf_counter()
+        orig_imgs_np, source_identifiers = load_images(source)
+        load_time = time.perf_counter() - load_start_time
+
+        # Preprocess images for inference
         preprocess_start_time = time.perf_counter()
-        processed_tensors, orig_imgs_np, source_identifiers, img_coordinate_mappers = preprocess_sources(
-            source, image_size=self.model.config.image_size
+        processed_tensors, img_coordinate_mappers = preprocess_for_inference(
+            orig_imgs_np, image_size=self.model.config.image_size
         )
         preprocess_time = time.perf_counter() - preprocess_start_time
 
@@ -188,14 +193,16 @@ class ObjectDetectionModel:
 
         if verbose >= 2:
             logger.info(
-                f"  preprocessing: {preprocess_time * 1000:.1f}ms, "
+                f"  load: {load_time * 1000:.1f}ms, "
+                f"preprocessing: {preprocess_time * 1000:.1f}ms, "
                 f"inference: {total_model_time * 1000:.1f}ms, "
                 f"postprocessing: {total_postprocess_time * 1000:.1f}ms"
             )
 
             if num_images > 1:
                 logger.info(
-                    f"  EACH IMAGE: preprocessing: {preprocess_time / num_images * 1000:.1f}ms, "
+                    f"  EACH IMAGE: load: {load_time / num_images * 1000:.1f}ms, "
+                    f"preprocessing: {preprocess_time / num_images * 1000:.1f}ms, "
                     f"inference: {total_model_time / num_images * 1000:.1f}ms, "
                     f"postprocessing: {total_postprocess_time / num_images * 1000:.1f}ms"
                 )
