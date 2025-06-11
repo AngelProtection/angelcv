@@ -193,12 +193,12 @@ class ObjectDetectionModel:
                 f"postprocessing: {total_postprocess_time * 1000:.1f}ms"
             )
 
-        if verbose >= 2 and num_images > 1:
-            logger.info(
-                f"  EACH IMAGE: preprocessing: {preprocess_time / num_images * 1000:.1f}ms, "
-                f"inference: {total_model_time / num_images * 1000:.1f}ms, "
-                f"postprocessing: {total_postprocess_time / num_images * 1000:.1f}ms"
-            )
+            if num_images > 1:
+                logger.info(
+                    f"  EACH IMAGE: preprocessing: {preprocess_time / num_images * 1000:.1f}ms, "
+                    f"inference: {total_model_time / num_images * 1000:.1f}ms, "
+                    f"postprocessing: {total_postprocess_time / num_images * 1000:.1f}ms"
+                )
 
         return results
 
