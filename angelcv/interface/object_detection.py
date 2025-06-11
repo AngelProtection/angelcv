@@ -143,45 +143,39 @@ class ObjectDetectionModel:
 
         # Preprocess images for inference
         preprocess_start_time = time.perf_counter()
-        processed_tensors, img_coordinate_mappers = preprocess_for_inference(
+        batch_tensor, img_coordinate_mappers = preprocess_for_inference(
             orig_imgs_np, image_size=self.model.config.image_size
         )
+        # Move batch to the same device as the model
+        batch_tensor = batch_tensor.to(self.model.device)
         preprocess_time = time.perf_counter() - preprocess_start_time
 
         # Run model inference
         results: list[InferenceResult] = []
-        total_model_time = 0.0
-        total_postprocess_time = 0.0
 
         with torch.no_grad():
-            # Batch processing could be implemented here
-            for i, processed_tensor in enumerate(processed_tensors):
-                # Move to the same device as the model
-                processed_tensor = processed_tensor.to(self.model.device)
+            # Run model forward pass
+            model_start_time = time.perf_counter()
+            output = self.model(batch_tensor)
+            inference_time = time.perf_counter() - model_start_time
 
-                # Run model forward pass (unsqueeze to add batch dimension)
-                model_start_time = time.perf_counter()
-                output = self.model(processed_tensor)
-                model_time = time.perf_counter() - model_start_time
-                total_model_time += model_time
-
-                # Postrocess model output (1, 400, 6 --> N, 6), where N is the number of detections above threshold
-                postprocess_start_time = time.perf_counter()
-                output = self._postprocess_detections(output, confidence_th=confidence_th)
-                postprocess_time = time.perf_counter() - postprocess_start_time
-                total_postprocess_time += postprocess_time
-
+            # Postprocess model output (B, 400, 6 --> N, 6 per image)
+            postprocess_start_time = time.perf_counter()
+            for i in range(batch_tensor.shape[0]):
+                output_i = output[i].unsqueeze(0)  # keep batch dim for compatibility
+                output_i = self._postprocess_detections(output_i, confidence_th=confidence_th)
                 results.append(
                     InferenceResult(
-                        model_output=output,
+                        model_output=output_i,
                         original_image=orig_imgs_np[i],
                         img_coordinate_mapper=img_coordinate_mappers[i],
                         class_labels=self.model.config.dataset.names if self.model.config.dataset else None,
                     )
                 )
+            postprocess_time = time.perf_counter() - postprocess_start_time
 
         total_time = time.perf_counter() - total_start_time
-        num_images = len(processed_tensors)
+        num_images = batch_tensor.shape[0]
         total_detections = sum(r.boxes.xyxy.shape[0] for r in results)
 
         # Log timing information based on verbosity level
@@ -195,16 +189,16 @@ class ObjectDetectionModel:
             logger.info(
                 f"  load: {load_time * 1000:.1f}ms, "
                 f"preprocessing: {preprocess_time * 1000:.1f}ms, "
-                f"inference: {total_model_time * 1000:.1f}ms, "
-                f"postprocessing: {total_postprocess_time * 1000:.1f}ms"
+                f"inference: {inference_time * 1000:.1f}ms, "
+                f"postprocessing: {postprocess_time * 1000:.1f}ms"
             )
 
             if num_images > 1:
                 logger.info(
                     f"  EACH IMAGE: load: {load_time / num_images * 1000:.1f}ms, "
                     f"preprocessing: {preprocess_time / num_images * 1000:.1f}ms, "
-                    f"inference: {total_model_time / num_images * 1000:.1f}ms, "
-                    f"postprocessing: {total_postprocess_time / num_images * 1000:.1f}ms"
+                    f"inference: {inference_time / num_images * 1000:.1f}ms, "
+                    f"postprocessing: {postprocess_time / num_images * 1000:.1f}ms"
                 )
 
         return results

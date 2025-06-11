@@ -167,7 +167,7 @@ def load_images(
 def preprocess_for_inference(
     images: list[np.ndarray],
     image_size: int | None = None,
-) -> tuple[list[torch.Tensor], list[ImageCoordinateMapper]]:
+) -> tuple[torch.Tensor, list[ImageCoordinateMapper]]:
     """
     Preprocesses numpy arrays for model inference by applying resizing, normalization, and conversion to tensors.
 
@@ -177,7 +177,7 @@ def preprocess_for_inference(
 
     Returns:
         tuple containing:
-        - List of preprocessed tensors ready for model input in [1,C,H,W] format, 0-1, RGB
+        - torch.Tensor: Batch of preprocessed tensors ready for model input in [B,C,H,W] format, 0-1, RGB
         - List of ImageCoordinateMapper objects for mapping between original and transformed coordinates
     """
     processed_tensors = []
@@ -185,10 +185,16 @@ def preprocess_for_inference(
 
     for img in images:
         tensor, img_coordinate_mapper = transform_image_for_inference(img, image_size=image_size)
+        # Remove batch dimension from tensor (should be [1,C,H,W])
+        if tensor.dim() == 4 and tensor.shape[0] == 1:
+            tensor = tensor.squeeze(0)
         processed_tensors.append(tensor)
         img_coordinate_mapper_list.append(img_coordinate_mapper)
 
-    return processed_tensors, img_coordinate_mapper_list
+    # Stack tensors into a batch [B,C,H,W]
+    batch_tensor = torch.stack(processed_tensors, dim=0)
+
+    return batch_tensor, img_coordinate_mapper_list
 
 
 def _load_path_source(src: str | Path) -> tuple[np.ndarray, str]:
