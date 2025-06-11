@@ -157,6 +157,7 @@ class ObjectDetectionModel:
             # Run model forward pass
             model_start_time = time.perf_counter()
             output = self.model(batch_tensor)
+            # NOTE: consider using "torch.cuda.synchronize(self.device)" for accurate timing
             inference_time = time.perf_counter() - model_start_time
 
             # Postprocess model output (B, 400, 6 --> N, 6 per image)
