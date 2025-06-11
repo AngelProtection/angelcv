@@ -143,9 +143,7 @@ class ObjectDetectionModel:
 
         # Preprocess images for inference
         preprocess_start_time = time.perf_counter()
-        batch_tensor, img_coordinate_mappers = preprocess_for_inference(
-            orig_imgs_np, image_size=self.model.config.image_size
-        )
+        batch_tensor, img_coordinate_mappers = preprocess_for_inference(orig_imgs_np, image_size=image_size)
         # Move batch to the same device as the model
         batch_tensor = batch_tensor.to(self.model.device)
         preprocess_time = time.perf_counter() - preprocess_start_time
