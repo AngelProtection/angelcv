@@ -217,20 +217,44 @@ class InferenceResult:
         """Set the class labels and update the detection labels."""
         self.boxes.class_labels = class_labels
 
-    def annotate_image(self, font_scale=0.5, thickness=2, show_conf=True):
+    def annotate_image(self, font_scale=0.65, thickness=3, show_conf=True, reference_size=640):
         """
         Create an annotated copy of the original image with detection boxes and labels.
 
+        All visual parameters are automatically scaled relative to image size for consistent
+        appearance across different image dimensions. Default parameters are defined for a
+        reference image size and automatically scaled.
+
         Args:
-            font_scale (float): Scale of font for the labels. Default is 0.5.
-            thickness (int): Thickness of bounding box lines. Default is 2.
+            font_scale (float): Scale of font for the labels, defined for reference_size image.
+                Default is 0.75 (for 640px reference).
+            thickness (int): Thickness of bounding box lines, defined for reference_size image.
+                Default is 4 (for 640px reference).
             show_conf (bool): Whether to show confidence scores. Default is True.
+            reference_size (int): Reference image size (pixels) for which the default parameters
+                are defined. Default is 640.
 
         Returns:
             np.ndarray: A copy of the original image (RGB format) with drawn bounding boxes and labels.
         """
         # Make a copy of the original image to avoid modifying it
         annotated_img = self.original_image.copy()
+
+        # Calculate image dimensions
+        img_height, img_width = self.original_image.shape[:2]
+
+        # Calculate scaling factor based on image size relative to reference size
+        # This ensures annotations look the same regardless of image size
+        min_dimension = min(img_width, img_height)
+        scale_factor = min_dimension / reference_size
+
+        # Scale the provided parameters based on actual image size
+        scaled_font_scale = max(0.3, min(2.0, font_scale * scale_factor))
+        scaled_thickness = max(1, int(thickness * scale_factor))
+
+        # Calculate adaptive spacing and padding based on scaled thickness
+        text_padding = max(2, scaled_thickness)  # Padding around text background
+        text_offset = max(1, scaled_thickness // 2)  # Offset from box edge
 
         # Determine the number of colors needed
         if self.boxes.class_labels:
@@ -270,7 +294,7 @@ class InferenceResult:
             color = colors[class_id % len(colors)]
 
             # Draw rectangle
-            cv2.rectangle(annotated_img, (x1, y1), (x2, y2), color, thickness)
+            cv2.rectangle(annotated_img, (x1, y1), (x2, y2), color, scaled_thickness)
 
             # Create label text with class name and optional confidence
             if self.boxes.class_labels:
@@ -282,13 +306,41 @@ class InferenceResult:
                 if show_conf:
                     label += f" {conf:.2f}"
 
-            # Draw label background
-            (text_width, text_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
-            cv2.rectangle(annotated_img, (x1, y1 - text_height - 4), (x1 + text_width, y1), color, -1)
+            # Calculate text size with adaptive font parameters
+            (text_width, text_height), baseline = cv2.getTextSize(
+                label, cv2.FONT_HERSHEY_SIMPLEX, scaled_font_scale, max(1, scaled_thickness // 2)
+            )
 
-            # Draw label text
+            # Calculate text background position with adaptive padding
+            text_bg_y1 = y1 - text_height - text_padding
+            text_bg_y2 = y1
+            text_bg_x1 = x1
+            text_bg_x2 = x1 + text_width + text_padding
+
+            # Ensure text background stays within image bounds
+            text_bg_y1 = max(0, text_bg_y1)
+            text_bg_x2 = min(img_width, text_bg_x2)
+
+            # Draw label background
+            cv2.rectangle(annotated_img, (text_bg_x1, text_bg_y1), (text_bg_x2, text_bg_y2), color, -1)
+
+            # Calculate text position with adaptive offset
+            text_y = y1 - text_offset
+            if text_y - text_height < 0:  # If text would go above image, place it below the box
+                text_y = y2 + text_height + text_offset
+                # Redraw background in new position
+                cv2.rectangle(annotated_img, (text_bg_x1, y2), (text_bg_x2, y2 + text_height + text_padding), color, -1)
+
+            # Draw label text with adaptive thickness (thinner for text)
+            text_thickness = max(1, scaled_thickness // 2)
             cv2.putText(
-                annotated_img, label, (x1, y1 - 2), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness
+                annotated_img,
+                label,
+                (x1 + text_padding // 2, text_y),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                scaled_font_scale,
+                (255, 255, 255),
+                text_thickness,
             )
 
         return annotated_img
