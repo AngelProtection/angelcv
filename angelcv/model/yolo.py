@@ -94,20 +94,21 @@ class YoloDetectionModel(pl.LightningModule):
         # List of tuples: (column_name, metric_key_in_callback_metrics)
         self.csv_metrics_config = [
             ("epoch", "epoch"),
-            ("train_loss_total", "loss/total/train"),
-            ("train_loss_iou", "loss/iou/train"),
-            ("train_loss_clf", "loss/clf/train"),
-            ("train_loss_dfl", "loss/dfl/train"),
-            ("val_loss_total", "loss/total/val"),
-            ("val_loss_iou", "loss/iou/val"),
-            ("val_loss_clf", "loss/clf/val"),
-            ("val_loss_dfl", "loss/dfl/val"),
-            ("val_map_50_95", "map/50-95/val"),
-            ("val_map_50", "map/50/val"),
-            ("val_map_75", "map/75/val"),
-            ("val_map_small", "map/small/val"),
-            ("val_map_medium", "map/medium/val"),
-            ("val_map_large", "map/large/val"),
+            ("loss/total/train", "loss/total/train"),
+            ("loss/iou/train", "loss/iou/train"),
+            ("loss/clf/train", "loss/clf/train"),
+            ("loss/dfl/train", "loss/dfl/train"),
+            ("loss/total/val", "loss/total/val"),
+            ("loss/iou/val", "loss/iou/val"),
+            ("loss/clf/val", "loss/clf/val"),
+            ("loss/dfl/val", "loss/dfl/val"),
+            ("map/50-95/val", "map/50-95/val"),
+            ("map/50/val", "map/50/val"),
+            ("map/75/val", "map/75/val"),
+            ("map/small/val", "map/small/val"),
+            ("map/medium/val", "map/medium/val"),
+            ("map/large/val", "map/large/val"),
+            ("lr", "lr-AdamW"),
         ]
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
@@ -388,6 +389,11 @@ class YoloDetectionModel(pl.LightningModule):
 
     def on_validation_epoch_end(self):
         self._common_eval_epoch_end("val")
+
+        # Log current learning rate for CSV tracking
+        current_lr = self.optimizers().param_groups[0]["lr"]
+        self.log("lr-AdamW", current_lr, on_epoch=True, logger=False)
+
         self._log_metrics_to_csv()
 
     def on_test_epoch_end(self):
