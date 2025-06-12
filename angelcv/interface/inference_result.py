@@ -1,11 +1,11 @@
 from pathlib import Path
-import random
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
+from angelcv.utils.annotation_utils import generate_distinct_colors
 from angelcv.utils.logging_manager import get_logger
 from angelcv.utils.source_utils import ImageCoordinateMapper
 
@@ -276,11 +276,8 @@ class InferenceResult:
         # Ensure at least one color is generated to avoid issues with range or modulo operations.
         num_colors_to_generate = max(1, num_colors_to_generate)
 
-        # Generate random colors
-        colors = [
-            (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))  # noqa: S311
-            for _ in range(num_colors_to_generate)
-        ]
+        # Generate consistent, visually distinct colors
+        colors = generate_distinct_colors(num_colors_to_generate)
 
         # Draw each detection
         for i, box in enumerate(self.boxes.xyxy):
