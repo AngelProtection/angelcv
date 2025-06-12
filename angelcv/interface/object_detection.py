@@ -160,12 +160,13 @@ class ObjectDetectionModel:
 
             # Postprocess model output (B, 400, 6 --> N, 6 per image)
             postprocess_start_time = time.perf_counter()
+            output_filtered_np = self._postprocess_detections_batch(output, confidence_th=confidence_th)
+
+            # Split results per image and create InferenceResult objects
             for i in range(batch_tensor.shape[0]):
-                output_i = output[i].unsqueeze(0)  # keep batch dim for compatibility
-                output_i = self._postprocess_detections(output_i, confidence_th=confidence_th)
                 results.append(
                     InferenceResult(
-                        model_output=output_i,
+                        model_output=output_filtered_np[i],
                         original_image=orig_imgs_np[i],
                         img_coordinate_mapper=img_coordinate_mappers[i],
                         class_labels=self.model.config.dataset.names if self.model.config.dataset else None,
@@ -217,9 +218,9 @@ class ObjectDetectionModel:
 
         self.model.to(self.device)
 
-    def _postprocess_detections(self, model_output: torch.Tensor, confidence_th: float = 0.3) -> torch.Tensor:
+    def _postprocess_detections_batch(self, model_output: torch.Tensor, confidence_th: float = 0.3) -> list[np.ndarray]:
         """
-        Postprocesses model output to extract detections.
+        Postprocesses model output to extract detections for an entire batch at once.
 
         Args:
             model_output: Raw output from the model (shape: B, 400, 6)
@@ -227,24 +228,30 @@ class ObjectDetectionModel:
             confidence_th: Confidence threshold for filtering
 
         Returns:
-            Filtered detections (shape: N, 6) where N is the number of detections above threshold
+            List of filtered detections (array) per image (shape: N, 6) where N is number of detections above threshold
         """
         # TODO [LOW]: implement NMS (not required for YOLOv10)
+        # NOTE: the input is a tensor instead of an array because NMS can be calculated on GPU
 
         assert model_output.ndim == 3, "model_output must be a 3D tensor"
-        assert model_output.shape[0] == 1, "model_output must have 1 batch dimension"
         assert model_output.shape[2] == 6, "model_output must have 6 columns"
 
-        model_output = model_output.squeeze(0)  # Remove batch dimension: (400, 6)
+        # Convert to numpy array early to avoid multiple conversions
+        model_output_np = model_output.cpu().numpy()
+        batch_size = model_output_np.shape[0]
 
-        # Filter based on confidence threshold
-        # Identify the confidence values (5th column, index 4)
-        conf_mask = model_output[..., 4] >= confidence_th
+        # Filter based on confidence threshold for entire batch at once
+        # Confidence values are in the 5th column (index 4)
+        conf_mask = model_output_np[..., 4] >= confidence_th
 
-        # Apply mask to get filtered detections
-        filt_model_output = model_output[conf_mask]
+        # Process each image in the batch
+        filtered_results = []
+        for i in range(batch_size):
+            # Apply mask to get filtered detections for this image
+            filt_detections = model_output_np[i][conf_mask[i]]
+            filtered_results.append(filt_detections)
 
-        return filt_model_output
+        return filtered_results
 
     def train(
         self,

@@ -30,7 +30,7 @@ class Boxes:
 
     def __init__(
         self,
-        model_output: np.ndarray | torch.Tensor,
+        model_output: np.ndarray,
         original_width: int,
         original_height: int,
         img_coordinate_mapper: ImageCoordinateMapper,
@@ -40,7 +40,7 @@ class Boxes:
         Initialize a Boxes object with model output and image dimensions.
 
         Args:
-            model_output: Detection results tensor/array with shape (num_detections, 6+)
+            model_output: Detection results array with shape (num_detections, 6+)
                           where each row contains [x1, y1, x2, y2, confidence, class_id, ...]
                           The first 4 values are bounding box coordinates in xyxy format.
                           The 5th value is the confidence/probability.
@@ -51,18 +51,17 @@ class Boxes:
             img_coordinate_mapper: ImageCoordinateMapper object containing transformation parameters
             class_labels: Optional dictionary mapping class indexes to class names
         """
-        model_output_np = model_output.cpu().numpy() if isinstance(model_output, torch.Tensor) else model_output
         self.original_width = original_width
         self.original_height = original_height
 
         # Convert from inference dimensions to original dimensions
-        xyxy_pix_inference = model_output_np[:, :4]
+        xyxy_pix_inference = model_output[:, :4]
         # NOTE: this conversion takes into account the padding and resizing applied to the image
         xyxy_pix_original = img_coordinate_mapper.transformed_to_original(xyxy_pix_inference)
 
         self._xyxy_pix = self._clean_xyxy_pix(xyxy_pix_original)
-        self.confidences = model_output_np[:, 4]
-        self.class_label_ids = model_output_np[:, 5].astype(int)
+        self.confidences = model_output[:, 4]
+        self.class_label_ids = model_output[:, 5].astype(int)
         self._class_labels = class_labels
         self.labels = self._create_labels_from_class_ids()
 
@@ -172,7 +171,7 @@ class Boxes:
 class InferenceResult:
     def __init__(
         self,
-        model_output: torch.Tensor,
+        model_output: torch.Tensor | np.ndarray,
         original_image: np.ndarray,
         confidence_th: float = 0.0,
         img_coordinate_mapper: ImageCoordinateMapper = None,
@@ -182,22 +181,22 @@ class InferenceResult:
         Initialize inference results with model output and image information.
 
         Args:
-            model_output: Model detection output tensor with shape (1, num_detections, 6)
+            model_output: Model detection output tensor/array with shape (1, num_detections, 6)
             original_image: Original input image as numpy array in RGB format
             img_coordinate_mapper: ImageCoordinateMapper object containing transformation parameters
             confidence_th: Confidence threshold for filtering detections, default 0.0 (no filtering)
             class_labels: Dictionary mapping class indexes to class names
         """
-        self.model_output = model_output
+        self.model_output = model_output.cpu().numpy() if isinstance(model_output, torch.Tensor) else model_output
         self.original_image = original_image
         self.confidence_th = confidence_th
 
-        assert model_output.ndim == 2, "model_output must be a 2D tensor"
-        assert model_output.shape[1] == 6, "model_output must have 6 columns"
+        assert self.model_output.ndim == 2, "model_output must be a 2D tensor/array"
+        assert self.model_output.shape[1] == 6, "model_output must have 6 columns"
 
         # Extract bounding boxes, confidence and class labels
         self.boxes = Boxes(
-            model_output=model_output,
+            model_output=self.model_output,
             original_width=original_image.shape[1],
             original_height=original_image.shape[0],
             img_coordinate_mapper=img_coordinate_mapper,
