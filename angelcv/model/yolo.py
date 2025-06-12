@@ -639,7 +639,7 @@ class YoloDetectionModel(pl.LightningModule):
             logger.warning("Experiment directory not set. Skipping CSV logging.")
             return
 
-        csv_file_path = self.experiment_dir / "validation_metrics.csv"
+        csv_file_path = self.experiment_dir / "train_metrics.csv"
 
         # Prepare the row data
         row_data = {}
