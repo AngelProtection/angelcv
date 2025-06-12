@@ -1,4 +1,5 @@
 from collections import deque
+import csv
 import inspect
 from pathlib import Path
 from typing import Literal
@@ -88,6 +89,26 @@ class YoloDetectionModel(pl.LightningModule):
         self.vis_interval = 10  # Save visualizations every N epochs
         self.vis_samples_per_batch = 4  # Number of samples to visualize per batch
         self.vis_confidence_threshold = 0.3  # Minimum confidence for displaying detections
+
+        # CSV logging configuration
+        # List of tuples: (column_name, metric_key_in_callback_metrics)
+        self.csv_metrics_config = [
+            ("epoch", "epoch"),
+            ("train_loss_total", "loss/total/train"),
+            ("train_loss_iou", "loss/iou/train"),
+            ("train_loss_clf", "loss/clf/train"),
+            ("train_loss_dfl", "loss/dfl/train"),
+            ("val_loss_total", "loss/total/val"),
+            ("val_loss_iou", "loss/iou/val"),
+            ("val_loss_clf", "loss/clf/val"),
+            ("val_loss_dfl", "loss/dfl/val"),
+            ("val_map_50_95", "map/50-95/val"),
+            ("val_map_50", "map/50/val"),
+            ("val_map_75", "map/75/val"),
+            ("val_map_small", "map/small/val"),
+            ("val_map_medium", "map/medium/val"),
+            ("val_map_large", "map/large/val"),
+        ]
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         """
@@ -367,6 +388,7 @@ class YoloDetectionModel(pl.LightningModule):
 
     def on_validation_epoch_end(self):
         self._common_eval_epoch_end("val")
+        self._log_metrics_to_csv()
 
     def on_test_epoch_end(self):
         self._common_eval_epoch_end("test")
@@ -605,6 +627,65 @@ class YoloDetectionModel(pl.LightningModule):
             # Also save the grid to disk
             grid_output_path = output_dir / f"epoch_{self.current_epoch:04d}_grid.jpg"
             vutils.save_image(image_grid, grid_output_path, normalize=False)
+
+    def _log_metrics_to_csv(self) -> None:
+        """
+        Log validation metrics to a CSV file for easy tracking across epochs.
+
+        Creates a CSV file if it doesn't exist, or appends to existing file.
+        Uses the self.csv_metrics_config list to determine which metrics to log.
+        """
+        if not self.experiment_dir:
+            logger.warning("Experiment directory not set. Skipping CSV logging.")
+            return
+
+        csv_file_path = self.experiment_dir / "validation_metrics.csv"
+
+        # Prepare the row data
+        row_data = {}
+
+        # Add epoch number
+        row_data["epoch"] = self.current_epoch
+
+        # Extract metrics from callback_metrics based on configuration
+        for column_name, metric_key in self.csv_metrics_config:
+            if metric_key == "epoch":
+                continue  # Already handled above
+
+            metric_value = self.trainer.callback_metrics.get(metric_key, None)
+            if metric_value is not None:
+                # Convert tensor to float if needed
+                if isinstance(metric_value, torch.Tensor):
+                    row_data[column_name] = metric_value.item()
+                else:
+                    row_data[column_name] = metric_value
+            else:
+                row_data[column_name] = None
+                logger.debug(f"Metric '{metric_key}' not found in callback_metrics")
+
+        # Get column names from configuration
+        column_names = [name for name, _ in self.csv_metrics_config]
+
+        # Check if file exists to determine if we need to write headers
+        file_exists = csv_file_path.exists()
+
+        try:
+            # Open file in append mode
+            with open(csv_file_path, "a", newline="") as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=column_names)
+
+                # Write header if file is new
+                if not file_exists:
+                    writer.writeheader()
+                    logger.info(f"Created new CSV metrics file: {csv_file_path}")
+
+                # Write the current epoch's data
+                writer.writerow(row_data)
+
+            logger.debug(f"Logged metrics for epoch {self.current_epoch} to {csv_file_path}")
+
+        except Exception as e:
+            logger.error(f"Failed to write metrics to CSV file {csv_file_path}: {e}")
 
 
 def model_arch_from_config(config: Config) -> tuple[nn.ModuleList, list[int]]:
