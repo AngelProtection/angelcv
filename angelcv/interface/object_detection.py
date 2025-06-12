@@ -290,6 +290,9 @@ class ObjectDetectionModel:
         # Set model to training mode
         self.model.train()
 
+        # Make proper use of the tensor cores
+        torch.set_float32_matmul_precision("medium")  # "high"
+
         # TODO [MID]: decide how to handle this (shouldn't be the default, but proposed as an option if required)
         # Disable peer-to-peer (P2P) direct memory access between GPUs
         # NOTE: Some GPUs (specially consumer ones) have issues with P2P (tested with RTX A4000)
