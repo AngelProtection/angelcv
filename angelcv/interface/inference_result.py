@@ -203,7 +203,7 @@ class InferenceResult:
             class_labels=class_labels,
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"InferenceResults(model_output={self.model_output})"
 
     @property
@@ -217,7 +217,14 @@ class InferenceResult:
         """Set the class labels and update the detection labels."""
         self.boxes.class_labels = class_labels
 
-    def annotate_image(self, font_scale=0.65, thickness=3, show_conf=True, reference_size=640):
+    def annotate_image(
+        self,
+        font_scale: float = 0.65,
+        thickness: int = 3,
+        show_conf: bool = True,
+        reference_size: int = 640,
+        label_bg_alpha: float = 0.7,
+    ) -> np.ndarray:
         """
         Create an annotated copy of the original image with detection boxes and labels.
 
@@ -227,12 +234,10 @@ class InferenceResult:
 
         Args:
             font_scale (float): Scale of font for the labels, defined for reference_size image.
-                Default is 0.75 (for 640px reference).
             thickness (int): Thickness of bounding box lines, defined for reference_size image.
-                Default is 4 (for 640px reference).
-            show_conf (bool): Whether to show confidence scores. Default is True.
-            reference_size (int): Reference image size (pixels) for which the default parameters
-                are defined. Default is 640.
+            show_conf (bool): Whether to show confidence scores.
+            reference_size (int): Reference image size (pixels) for which the default parameters are defined.
+            label_bg_alpha (float): Transparency of label background (0.0 = transparent, 1.0 = opaque).
 
         Returns:
             np.ndarray: A copy of the original image (RGB format) with drawn bounding boxes and labels.
@@ -321,15 +326,19 @@ class InferenceResult:
             text_bg_y1 = max(0, text_bg_y1)
             text_bg_x2 = min(img_width, text_bg_x2)
 
-            # Draw label background
-            cv2.rectangle(annotated_img, (text_bg_x1, text_bg_y1), (text_bg_x2, text_bg_y2), color, -1)
+            # Draw label background with transparency
+            overlay = annotated_img.copy()
+            cv2.rectangle(overlay, (text_bg_x1, text_bg_y1), (text_bg_x2, text_bg_y2), color, -1)
 
             # Calculate text position with adaptive offset
             text_y = y1 - text_offset
             if text_y - text_height < 0:  # If text would go above image, place it below the box
                 text_y = y2 + text_height + text_offset
-                # Redraw background in new position
-                cv2.rectangle(annotated_img, (text_bg_x1, y2), (text_bg_x2, y2 + text_height + text_padding), color, -1)
+                # Redraw background in new position on overlay
+                cv2.rectangle(overlay, (text_bg_x1, y2), (text_bg_x2, y2 + text_height + text_padding), color, -1)
+
+            # Blend the overlay with the original image to create transparency effect
+            cv2.addWeighted(overlay, label_bg_alpha, annotated_img, 1 - label_bg_alpha, 0, annotated_img)
 
             # Draw label text with adaptive thickness (thinner for text)
             text_thickness = max(1, scaled_thickness // 2)
@@ -345,7 +354,7 @@ class InferenceResult:
 
         return annotated_img
 
-    def show(self, window_name="Inference Result", block=True):
+    def show(self, window_name: str = "Inference Result", block: bool = True) -> None:
         """
         Display the annotated image in a window using matplotlib.
 
@@ -371,7 +380,7 @@ class InferenceResult:
             plt.show(block=False)
             plt.pause(0.001)  # Small pause to render the window
 
-    def save(self, output_path: str | Path, show_conf: bool = True):
+    def save(self, output_path: str | Path, show_conf: bool = True) -> Path:
         """
         Save the annotated image to a file.
 
