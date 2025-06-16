@@ -3,15 +3,13 @@ import sys
 
 def is_debug_mode() -> bool:
     """
-    Check if the code is currently running in debug mode.
+    Determines if the current Python process is running under a debugger.
 
-    This function detects whether a Python debugger (like pdb, PyCharm debugger,
-    or VS Code debugger) is currently active by checking the sys.gettrace() function.
+    This function checks for the presence of common debugger modules in sys.modules,
+    such as those used by PyCharm ("pydevd"), Visual Studio Code ("ptvsd"), the built-in
+    Python debugger ("pdb"), or IPython environments (which often indicate interactive debugging).
 
     Returns:
-        bool: True if a debugger is active, False otherwise
+        bool: True if a known debugger module is loaded (i.e., debugging is likely active), False otherwise.
     """
-    gettrace = getattr(sys, "gettrace", None)
-    if gettrace is None:
-        return False  # Debugging is not supported or not in debugger mode
-    return gettrace() is not None  # Returns True if debugger is active, False otherwise
+    return any(mod in sys.modules for mod in ["pydevd", "ptvsd", "pdb", "IPython"])
