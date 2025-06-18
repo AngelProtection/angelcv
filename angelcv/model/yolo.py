@@ -400,17 +400,10 @@ class YoloDetectionModel(pl.LightningModule):
         self._common_eval_epoch_end("test")
 
     def configure_optimizers(self):
-        # NOTE: done with "estimated_stepping batches" as
-        # self.trainer.train_dataloader is not accessible here
+        # NOTE: "estimated_stepping_batches" --> estimated number of batches that will optimizer.step() during training
+        # it compensates for "overfit_batches" and the number of GPUs
+        # Not using "num_training_batches" as sometimes seems to return "inf"
         self.steps_per_epoch = int(self.trainer.estimated_stepping_batches / self.trainer.max_epochs)
-
-        # Adjust steps_per_epoch based on overfit_batches
-        if isinstance(self.trainer.overfit_batches, int):
-            self.steps_per_epoch = self.trainer.overfit_batches
-        elif isinstance(self.trainer.overfit_batches, float) and self.trainer.overfit_batches > 0.0:
-            # Calculate based on a fraction of the dataset
-            self.steps_per_epoch = int(self.steps_per_epoch * self.trainer.overfit_batches)
-
         self.warmup_steps = self.config.train.scheduler.warmup_epochs * self.steps_per_epoch
         self.max_steps = self.trainer.max_epochs * self.steps_per_epoch
 
