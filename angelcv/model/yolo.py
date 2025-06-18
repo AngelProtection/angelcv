@@ -414,7 +414,7 @@ class YoloDetectionModel(pl.LightningModule):
             # self.trainer.train_dataloader is not accessible here
             self.steps_per_epoch = int(self.trainer.estimated_stepping_batches / self.trainer.max_epochs)
         self.warmup_steps = self.config.train.scheduler.warmup_epochs * self.steps_per_epoch
-        self.total_steps = self.trainer.max_epochs * self.steps_per_epoch
+        self.max_steps = self.trainer.max_epochs * self.steps_per_epoch
 
         # Get all BatchNorm layers
         bn_types = tuple(v for k, v in get_block_name_to_impl_dict().items() if "Norm" in k)
@@ -463,7 +463,7 @@ class YoloDetectionModel(pl.LightningModule):
             optimizer,
             start_factor=self.config.train.scheduler.args["warmup_factor"],  # Start from 1.0 * max_lr (end of warmup)
             end_factor=self.config.train.scheduler.args["end_factor"],  # End at 0.01 * max_lr
-            total_iters=self.total_steps - self.warmup_steps,  # Duration of decay
+            total_iters=self.max_steps - self.warmup_steps,  # Duration of decay
         )
 
         # Combine schedulers: Warmup followed by Decay
