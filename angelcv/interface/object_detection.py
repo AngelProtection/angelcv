@@ -47,7 +47,7 @@ class ObjectDetectionModel:
         model = ObjectDetectionModel("yolov10n.ckpt")
 
         # Train the model using a dataset configuration
-        results = model.train(dataset="coco.yaml", epochs=100)
+        results = model.train(dataset="coco.yaml", max_epochs=100, patience=10)
 
         # Test the model
         results = model.test(dataset="coco.yaml")
