@@ -270,7 +270,7 @@ class ObjectDetectionModel:
             image_size: Image size of the model.
             batch_size: Batch size for training.
             num_workers: Number of worker threads for data loading.
-            patience: Number of epochs with worse validation loss to wait before stopping training.
+            patience: Number of epochs with worse validation loss to wait before stopping training (0=disabled).
 
             accelerator: Supports passing different accelerator types ("cpu", "gpu", "tpu", "hpu", "mps", "auto")
             devices:The devices to use. Can be set to a positive number (int or str), a sequence of device indices
