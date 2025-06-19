@@ -351,6 +351,8 @@ class ObjectDetectionModel:
             LearningRateMonitor(logging_interval="step"),
             DeviceStatsMonitor(),
             RichProgressBar(),
+            # TODO [MID]: decide if should prune the model weights after training (faster inference)
+            # ModelPruning(...)
         ]
 
         if self.model.config.train.patience > 0:
