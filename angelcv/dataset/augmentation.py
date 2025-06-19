@@ -69,25 +69,63 @@ if __name__ == "__main__":
     from angelcv.dataset.coco_datamodule import CocoDataModule
 
     config = ConfigManager.upsert_config(dataset_file="coco.yaml")
-    coco_dm = CocoDataModule(config)
+
+    # Create CocoDataModule with train_transforms set to val_transforms (no augmentations)
+    coco_dm = CocoDataModule(
+        config,
+        train_transforms=default_val_transforms(
+            max_size=config.train.data.image_size
+        ),  # Use val transforms for train too
+        val_transforms=default_val_transforms(max_size=config.train.data.image_size),
+    )
     coco_dm.prepare_data()
     coco_dm.setup()
 
     train_loader = coco_dm.train_dataloader()
     val_loader = coco_dm.val_dataloader()
 
-    n_samples = 10
+    # Create augmentation transforms to apply manually
+    augmentation_transforms = default_train_transforms(max_size=config.train.data.image_size)
+
+    n_samples = 50
     for i, batch in enumerate(train_loader):
-        images = batch["images"]
-        # If images is (B, C, H, W), make a grid
-        if isinstance(images, torch.Tensor):
-            grid = vutils.make_grid(images, nrow=4, normalize=True, scale_each=True)
-            plt.figure(figsize=(12, 8))
-            plt.title(f"Batch {i} - shape: {images.shape}")
-            plt.axis("off")
-            plt.imshow(grid.permute(1, 2, 0).cpu().numpy())
-            plt.show()
-        else:
-            print(f"Batch {i}: {images.shape} (not a torch.Tensor, cannot display grid)")
+        images_original = batch["images"]  # Shape: (B, C, H, W)
+
+        # Convert back to numpy for augmentation (reverse the ToTensorV2 and normalization)
+        # The images are normalized with mean=0, std=1, max_pixel_value=255
+        # So we need to denormalize: pixel_value = (normalized_value * 255)
+        images_numpy = (images_original * 255).clamp(0, 255).byte().permute(0, 2, 3, 1).cpu().numpy()
+
+        # Apply augmentations to each image in the batch
+        augmented_images = []
+        for img_idx in range(images_numpy.shape[0]):
+            img = images_numpy[img_idx]  # Shape: (H, W, C)
+
+            # Apply augmentations (we don't need bboxes for visualization)
+            augmented = augmentation_transforms(image=img, bboxes=[], labels=[])
+            augmented_img = augmented["image"]  # This will be a tensor
+            augmented_images.append(augmented_img)
+
+        # Stack augmented images back to batch
+        images_augmented = torch.stack(augmented_images)
+
+        # Create side-by-side comparison
+        fig, axes = plt.subplots(1, 2, figsize=(15, 10))
+
+        # Original images grid
+        grid_original = vutils.make_grid(images_original, nrow=4, normalize=True, scale_each=True)
+        axes[0].imshow(grid_original.permute(1, 2, 0).cpu().numpy())
+        axes[0].set_title(f"Batch {i} - Original (No Augmentation) - shape: {images_original.shape}")
+        axes[0].axis("off")
+
+        # Augmented images grid
+        grid_augmented = vutils.make_grid(images_augmented, nrow=4, normalize=True, scale_each=True)
+        axes[1].imshow(grid_augmented.permute(1, 2, 0).cpu().numpy())
+        axes[1].set_title(f"Batch {i} - With Augmentation - shape: {images_augmented.shape}")
+        axes[1].axis("off")
+
+        plt.tight_layout()
+        plt.show()
+
         if i >= n_samples:
             break
