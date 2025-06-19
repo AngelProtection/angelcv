@@ -388,6 +388,7 @@ class ObjectDetectionModel:
         # --- Train model ---
         logger.info(f"Starting training for {self.model.config.train.max_epochs} epochs")
         trainer.fit(self.model, datamodule=datamodule)
+        # TODO [MID]: add tuner to find the best batch size and other optimizations
 
         # --- Store and return results ---
         # Extract metrics from trainer/logger
