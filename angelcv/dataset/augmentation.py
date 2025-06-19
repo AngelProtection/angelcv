@@ -4,6 +4,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 
+# TODO [MID]: use the config element to setup the augmentation parameters
 def default_train_transforms(max_size: int = 640) -> Callable:
     """
     Default training data transformations.
