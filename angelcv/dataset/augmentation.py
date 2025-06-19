@@ -58,3 +58,36 @@ def default_val_transforms(max_size: int = 640) -> Callable:
         ],
         bbox_params=A.BboxParams(format="albumentations", label_fields=["labels"]),
     )
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    import torch
+    import torchvision.utils as vutils
+
+    from angelcv.config import ConfigManager
+    from angelcv.dataset.coco_datamodule import CocoDataModule
+
+    config = ConfigManager.upsert_config(dataset_file="coco.yaml")
+    coco_dm = CocoDataModule(config)
+    coco_dm.prepare_data()
+    coco_dm.setup()
+
+    train_loader = coco_dm.train_dataloader()
+    val_loader = coco_dm.val_dataloader()
+
+    n_samples = 10
+    for i, batch in enumerate(train_loader):
+        images = batch["images"]
+        # If images is (B, C, H, W), make a grid
+        if isinstance(images, torch.Tensor):
+            grid = vutils.make_grid(images, nrow=4, normalize=True, scale_each=True)
+            plt.figure(figsize=(12, 8))
+            plt.title(f"Batch {i} - shape: {images.shape}")
+            plt.axis("off")
+            plt.imshow(grid.permute(1, 2, 0).cpu().numpy())
+            plt.show()
+        else:
+            print(f"Batch {i}: {images.shape} (not a torch.Tensor, cannot display grid)")
+        if i >= n_samples:
+            break
