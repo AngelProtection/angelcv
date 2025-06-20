@@ -108,22 +108,22 @@ if __name__ == "__main__":
     config = ConfigManager.upsert_config(dataset_file="coco.yaml")
 
     # Create CocoDataModule with train_transforms set to val_transforms (no augmentations)
-    coco_dm = CocoDataModule(
+    datamodule = CocoDataModule(
         config,
         train_transforms=default_val_transforms(
             max_size=config.train.data.image_size
         ),  # Use val transforms for train too
         val_transforms=default_val_transforms(max_size=config.train.data.image_size),
     )
-    coco_dm.prepare_data()
-    coco_dm.setup()
+    datamodule.prepare_data()
+    datamodule.setup()
 
-    train_loader = coco_dm.train_dataloader()
-    val_loader = coco_dm.val_dataloader()
+    train_loader = datamodule.train_dataloader()
+    val_loader = datamodule.val_dataloader()
 
     # Create augmentation transforms to apply manually
     augmentation_transforms = default_train_transforms(
-        max_size=config.train.data.image_size, dataset=coco_dm.train_dataset
+        max_size=config.train.data.image_size, dataset=datamodule.train_dataset
     )
 
     # Generate colors for classes
