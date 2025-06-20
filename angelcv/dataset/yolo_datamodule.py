@@ -33,7 +33,7 @@ class YOLODetectionDataset(Dataset):
         labels_dir: str | Path,
         classes: dict[int, str],
         transforms: Callable | None = None,
-    ):
+    ) -> None:
         self.images_dir = Path(images_dir)
         self.labels_dir = Path(labels_dir)
         self.classes = classes  # e.g. {0: "person", 1: "car", ...}
@@ -46,14 +46,14 @@ class YOLODetectionDataset(Dataset):
     def __len__(self) -> int:
         return len(self.image_files)
 
-    def _load_image(self, image_path: Path):
+    def _load_image(self, image_path: Path) -> np.ndarray:
         image = cv2.imread(str(image_path))
         if image is None:
             raise ValueError(f"Failed to load image {image_path}")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
 
-    def _load_target(self, image_path: Path) -> tuple[list, list]:
+    def _load_target(self, image_path: Path) -> tuple[list[list[float]], list[int]]:
         """
         Loads and converts annotations from a YOLO-format text file.
         Returns:
@@ -96,7 +96,7 @@ class YOLODetectionDataset(Dataset):
             # logger.info(f"No label file found for image {image_path}, using as background image.")
             return [], []
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, list[dict]]:
         image_path = self.image_files[index]
         image = self._load_image(image_path)
         bboxes, labels = self._load_target(image_path)
@@ -140,7 +140,7 @@ class YOLODataModule(L.LightningDataModule):
         config: Config,
         train_transforms: Callable | None = None,
         val_transforms: Callable | None = None,
-    ):
+    ) -> None:
         super().__init__()
 
         # Store the config
@@ -151,7 +151,7 @@ class YOLODataModule(L.LightningDataModule):
         self.dataset_root = Path(config.dataset.path)
         self.train_dir = self.dataset_root / config.dataset.train
         self.val_dir = self.dataset_root / config.dataset.val
-        self.test_dir = None
+        self.test_dir: Path | None = None
         if config.dataset.test:
             self.test_dir = self.dataset_root / config.dataset.test
 
@@ -164,11 +164,11 @@ class YOLODataModule(L.LightningDataModule):
         self.train_transforms = train_transforms or default_train_transforms(max_size=config.train.data.image_size)
         self.val_transforms = val_transforms or default_val_transforms(max_size=config.train.data.image_size)
 
-        self.train_dataset = None
-        self.val_dataset = None
-        self.test_dataset = None
+        self.train_dataset: YOLODetectionDataset | None = None
+        self.val_dataset: YOLODetectionDataset | None = None
+        self.test_dataset: YOLODetectionDataset | None = None
 
-    def _get_labels_dir(self, images_dir: Path) -> Path:
+    def _get_labels_dir(self, images_dir: Path | None) -> Path:
         """
         Given an images directory, returns the corresponding labels directory.
         Follows the convention:
@@ -176,6 +176,7 @@ class YOLODataModule(L.LightningDataModule):
         """
         if images_dir is None:
             raise ValueError("images_dir must not be None")
+
         if images_dir.parent.name.lower() == "images":
             # For example, if images_dir is /path/to/dataset/images/train,
             # then labels_dir becomes /path/to/dataset/labels/train.
@@ -222,7 +223,7 @@ class YOLODataModule(L.LightningDataModule):
                 transforms=self.val_transforms,
             )
 
-    def _collate_fn(self, batch: list[tuple[torch.Tensor, list]]) -> dict[str, torch.Tensor]:
+    def _collate_fn(self, batch: list[tuple[torch.Tensor, list[dict]]]) -> dict[str, torch.Tensor]:
         """
         Custom collate function for batching YOLO detection samples.
         """
@@ -244,7 +245,7 @@ class YOLODataModule(L.LightningDataModule):
             "labels": labels.unsqueeze(-1),  # shape: (batch_size, max_boxes, 1)
         }
 
-    def train_dataloader(self) -> DataLoader:
+    def train_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict]]]:
         """
         Returns the train DataLoader.
         """
