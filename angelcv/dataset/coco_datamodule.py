@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import shutil
-from typing import Any, Callable
+from typing import Callable
 import urllib.request
 import zipfile
 
@@ -48,10 +48,10 @@ class CocoDetection(Dataset):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
 
-    def _load_target(self, id: int) -> list[dict[str, Any]]:
+    def _load_target(self, id: int) -> list[dict]:
         return self.coco.loadAnns(self.coco.getAnnIds(id))
 
-    def getitem(self, index: int, augment: bool) -> dict[str, Any] | tuple[np.ndarray, list[dict[str, Any]]]:
+    def getitem(self, index: int, augment: bool) -> dict | tuple[np.ndarray, list[dict]]:
         image_id = self.image_ids[index]
         image = self._load_image(image_id)
         target = self._load_target(image_id)
@@ -118,7 +118,7 @@ class CocoDetection(Dataset):
 
         return image, target
 
-    def __getitem__(self, index: int) -> tuple[torch.Tensor, list[dict[str, Any]]]:
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, list[dict]]:
         return self.getitem(index, augment=True)
 
     def __len__(self) -> int:
@@ -276,7 +276,7 @@ class CocoDataModule(L.LightningDataModule):
         else:
             raise ValueError(f"Invalid task: {self.task}")
 
-    def _collate_fn(self, batch: list[tuple[torch.Tensor, list[dict[str, Any]]]]) -> dict[str, torch.Tensor]:
+    def _collate_fn(self, batch: list[tuple[torch.Tensor, list[dict]]]) -> dict[str, torch.Tensor]:
         """
         Custom collate function for batching COCO detection samples.
 
@@ -318,7 +318,7 @@ class CocoDataModule(L.LightningDataModule):
             "labels": labels.unsqueeze(-1),  # shape: (batch_size, max_boxes, 1)
         }
 
-    def train_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict[str, Any]]]]:
+    def train_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict]]]:
         """
         Train DataLoader.
 
@@ -334,7 +334,7 @@ class CocoDataModule(L.LightningDataModule):
             collate_fn=self._collate_fn,
         )
 
-    def val_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict[str, Any]]]]:
+    def val_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict]]]:
         """
         Validation DataLoader.
 
@@ -349,7 +349,7 @@ class CocoDataModule(L.LightningDataModule):
             collate_fn=self._collate_fn,
         )
 
-    def test_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict[str, Any]]]]:
+    def test_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict]]]:
         """
         Test DataLoader.
 
