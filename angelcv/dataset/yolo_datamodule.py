@@ -96,7 +96,7 @@ class YOLODetectionDataset(Dataset):
             # logger.info(f"No label file found for image {image_path}, using as background image.")
             return [], []
 
-    def getitem(self, index: int, augment: bool) -> dict[str, Any] | tuple[np.ndarray, list[dict[str, Any]]]:
+    def getitem(self, index: int, augment: bool) -> dict | tuple[np.ndarray, list[dict]]:
         """
         Get item with optional augmentation.
 
@@ -142,7 +142,7 @@ class YOLODetectionDataset(Dataset):
 
         return image, target
 
-    def __getitem__(self, index: int) -> tuple[torch.Tensor, list[dict[str, Any]]]:
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, list[dict]]:
         return self.getitem(index, augment=True)
 
 
@@ -281,7 +281,7 @@ class YOLODataModule(L.LightningDataModule):
             collate_fn=self._collate_fn,
         )
 
-    def val_dataloader(self) -> DataLoader:
+    def val_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict]]]:
         """
         Returns the validation DataLoader.
         """
@@ -293,12 +293,13 @@ class YOLODataModule(L.LightningDataModule):
             collate_fn=self._collate_fn,
         )
 
-    def test_dataloader(self) -> DataLoader | None:
+    def test_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict]]] | None:
         """
         Returns the test DataLoader if a test directory is provided.
         """
         if self.test_dataset is None:
             return None
+
         return DataLoader(
             self.test_dataset,
             batch_size=self.config.train.data.batch_size,
