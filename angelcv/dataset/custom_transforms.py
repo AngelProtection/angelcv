@@ -1,11 +1,10 @@
 from typing import Any
 
 import albumentations as A
-from albumentations.augmentations.mixing.transforms import Mosaic
 from torch.utils.data import Dataset
 
 
-class MosaicFromDataset(Mosaic):
+class MosaicFromDataset(A.Mosaic):
     """
     A variation of the Mosaic augmentation that fetches additional images directly
     from a PyTorch Dataset at runtime, rather than requiring them to be passed
