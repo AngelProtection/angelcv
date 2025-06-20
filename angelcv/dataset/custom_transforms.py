@@ -1,141 +1,141 @@
-import random
+from typing import Any
 
 import albumentations as A
-import cv2
-import numpy as np
+from albumentations.augmentations.mixing.transforms import Mosaic
 from torch.utils.data import Dataset
 
 
-class DatasetMosaic(A.DualTransform):
+class MosaicFromDataset(Mosaic):
     """
-    Simple Mosaic augmentation that samples additional images from a PyTorch Dataset.
-    Compatible with albumentations A.Compose.
+    A variation of the Mosaic augmentation that fetches additional images directly
+    from a PyTorch Dataset at runtime, rather than requiring them to be passed
+    via metadata.
+
+    This transform is designed to be integrated into a PyTorch training pipeline,
+    simplifying the data loading loop.
+
+    Args:
+        dataset (Dataset): An instance of a PyTorch-compatible dataset. The `__getitem__`
+            method of this dataset must return a dictionary containing the keys expected
+            by your Albumentations pipeline (e.g., 'image', 'bboxes', 'labels').
+        **kwargs: All other keyword arguments accepted by the standard `Mosaic`
+            transform (e.g., `grid_yx`, `target_size`, `p`).
     """
 
-    def __init__(self, dataset: Dataset, num_additional: int = 3, p: float = 0.5):
-        super().__init__(p=p)
+    def __init__(self, dataset: Dataset, **kwargs):
+        # The metadata_key is irrelevant in this implementation, so we remove it
+        # from kwargs if present to avoid confusion.
+        kwargs.pop("metadata_key", None)
+        super().__init__(**kwargs)
         self.dataset = dataset
-        self.num_additional = num_additional
+        if len(self.dataset) == 0:
+            raise ValueError("The provided dataset cannot be empty.")
 
-    def apply(self, img, additional_images=None, **params):
-        """Apply mosaic augmentation by combining the main image with additional images."""
-        if additional_images is None or len(additional_images) == 0:
-            return img  # Return original image if no additional images
+    def _select_additional_items(
+        self,
+        data: dict[str, Any],
+        num_additional_needed: int,
+    ) -> list[dict[str, Any]]:
+        """
+        Overrides the parent method to source additional items from the dataset.
+        """
+        dataset_len = len(self.dataset)
+        # It's important to use the transform's internal random generator for reproducibility.
+        indices = [self.py_random.randint(0, dataset_len - 1) for _ in range(num_additional_needed)]
 
-        # Get image dimensions
-        h, w = img.shape[:2]
+        additional_items = []
+        for idx in indices:
+            # This is the "contract": the dataset must return a dictionary
+            # in a format that the rest of the Albumentations pipeline understands.
+            # This fetched item is treated exactly like the items that would have
+            # been in `mosaic_metadata`.
+            item = self.dataset[idx]
+            additional_items.append(item)
 
-        # Create 2x2 mosaic grid
-        mosaic_h, mosaic_w = h * 2, w * 2
-        mosaic = np.zeros((mosaic_h, mosaic_w, 3), dtype=img.dtype)
+        return additional_items
 
-        # Resize main image and place in top-left
-        resized_main = cv2.resize(img, (w, h))
-        mosaic[0:h, 0:w] = resized_main
+    @property
+    def targets(self) -> dict[str, Any]:
+        """
+        Overrides the parent `targets` property to remove the dependency on
+        `mosaic_metadata`, as this transform sources data directly from the dataset.
+        """
+        # We start with the parent's targets...
+        parent_targets = super().targets
+        # ...and remove the metadata key, as it's not provided in the input.
+        # We use the default key name directly to avoid an AttributeError during initialization,
+        # as `self.metadata_key` may not be set yet when this is first called.
+        parent_targets.pop("mosaic_metadata", None)
+        return parent_targets
 
-        # Place additional images in other quadrants
-        positions = [(0, w), (h, 0), (h, w)]  # top-right, bottom-left, bottom-right
+    @property
+    def targets_as_params(self) -> list[str]:
+        return []
 
-        for i, pos in enumerate(positions):
-            if i < len(additional_images):
-                additional_img = additional_images[i]
-                if additional_img is not None:
-                    # Resize to fit quadrant
-                    resized_additional = cv2.resize(additional_img, (w, h))
-                    y, x = pos
-                    mosaic[y : y + h, x : x + w] = resized_additional
 
-        # Resize back to original dimensions
-        final_mosaic = cv2.resize(mosaic, (w, h))
-        return final_mosaic
+if __name__ == "__main__":
+    import albumentations as A
+    import numpy as np
+    from torch.utils.data import Dataset
 
-    def apply_to_bboxes(self, bboxes, **params):
-        """Transform bounding boxes for mosaic (simplified - just scale down to top-left quadrant)."""
-        if len(bboxes) == 0:
-            return bboxes
+    class FakeDataset(Dataset):
+        """A dummy dataset for testing purposes."""
 
-        # Scale bboxes to fit in top-left quadrant (0.5x scale)
-        scaled_bboxes = []
-        for bbox in bboxes:
-            x_min, y_min, x_max, y_max = bbox[:4]
-            # Scale and keep in top-left quadrant
-            scaled_bbox = [x_min * 0.5, y_min * 0.5, x_max * 0.5, y_max * 0.5]
-            # Add any additional fields
-            if len(bbox) > 4:
-                scaled_bbox.extend(bbox[4:])
-            scaled_bboxes.append(scaled_bbox)
-        return scaled_bboxes
+        def __init__(self, num_samples: int = 10, img_size: tuple = (416, 416)):
+            self.num_samples = num_samples
+            self.img_size = img_size
 
-    def apply_to_keypoints(self, keypoints, **params):
-        """Transform keypoints for mosaic (simplified - just scale down to top-left quadrant)."""
-        if len(keypoints) == 0:
-            return keypoints
+        def __len__(self) -> int:
+            return self.num_samples
 
-        scaled_keypoints = []
-        for kp in keypoints:
-            x, y = kp[:2]
-            # Scale to top-left quadrant
-            scaled_kp = [x * 0.5, y * 0.5]
-            # Add any additional fields
-            if len(kp) > 2:
-                scaled_kp.extend(kp[2:])
-            scaled_keypoints.append(scaled_kp)
-        return scaled_keypoints
+        def __getitem__(self, idx: int) -> dict:
+            img = np.random.randint(0, 255, size=(*self.img_size, 3), dtype=np.uint8)
+            # One bounding box in the middle of the image
+            bboxes = [
+                [
+                    self.img_size[1] * 0.25,
+                    self.img_size[0] * 0.25,
+                    self.img_size[1] * 0.75,
+                    self.img_size[0] * 0.75,
+                ]
+            ]
+            labels = [0]  # Single class
+            return {"image": img, "bboxes": bboxes, "labels": labels}
 
-    def get_params_dependent_on_data(self, params, data):
-        """Sample additional images from the dataset."""
-        try:
-            # Sample random indices from dataset
-            dataset_size = len(self.dataset)
-            current_idx = data.get("index", None)
+    print("Running MosaicFromDataset test...")
 
-            # Get available indices (excluding current if known)
-            available_indices = list(range(dataset_size))
-            if current_idx is not None and current_idx in available_indices:
-                available_indices.remove(current_idx)
+    # 1. Create fake data source
+    fake_dataset = FakeDataset(num_samples=10, img_size=(416, 416))
 
-            # Sample additional images
-            num_to_sample = min(self.num_additional, len(available_indices))
-            if num_to_sample > 0:
-                sampled_indices = random.sample(available_indices, num_to_sample)
+    # 2. Get a sample from the dataset to be transformed
+    sample_to_transform = fake_dataset[0]
 
-                additional_images = []
-                for idx in sampled_indices:
-                    try:
-                        # Get sample from dataset
-                        sample = self.dataset[idx]
+    # 3. Instantiate Mosaic transform and wrap it in a Compose pipeline.
+    # The Mosaic transform depends on processors provided by Compose, so we must use it.
+    transform_pipeline = A.Compose(
+        [
+            MosaicFromDataset(
+                dataset=fake_dataset,
+                p=1.0,  # Always apply for testing
+            )
+        ],
+        bbox_params=A.BboxParams(format="pascal_voc", label_fields=["labels"]),
+    )
 
-                        # Extract image (handle different return formats)
-                        if isinstance(sample, tuple) and len(sample) >= 1:
-                            image = sample[0]  # (image, target) format
-                        elif isinstance(sample, dict) and "image" in sample:
-                            image = sample["image"]  # dict format
-                        else:
-                            image = sample  # direct image
+    # 4. Apply the transform
+    transformed = transform_pipeline(
+        image=sample_to_transform["image"], bboxes=sample_to_transform["bboxes"], labels=sample_to_transform["labels"]
+    )
 
-                        # Convert tensor to numpy if needed
-                        if hasattr(image, "numpy"):
-                            image = image.numpy()
-                            # Handle tensor format (C, H, W) -> (H, W, C)
-                            if image.ndim == 3 and image.shape[0] in [1, 3, 4]:
-                                image = image.transpose(1, 2, 0)
-                            # Denormalize if needed
-                            if image.dtype == np.float32 and image.max() <= 1.0:
-                                image = (image * 255).astype(np.uint8)
-
-                        # Ensure uint8 format
-                        if image.dtype != np.uint8:
-                            image = image.astype(np.uint8)
-
-                        additional_images.append(image)
-
-                    except Exception as e:
-                        print(f"Warning: Failed to load image at index {idx}: {e}")
-                        continue
-
-                return {"additional_images": additional_images}
-
-        except Exception as e:
-            print(f"Warning: Failed to sample additional images: {e}")
-
-        return {"additional_images": []}
+    # 5. Print results to verify
+    print("\n--- Mosaic Augmentation Test ---")
+    print(f"Original image shape: {sample_to_transform['image'].shape}")
+    print(f"Original bboxes: {sample_to_transform['bboxes']}")
+    print("-" * 20)
+    print(f"Transformed image shape: {transformed['image'].shape}")
+    print(f"Transformed bboxes count: {len(transformed['bboxes'])}")
+    if transformed["bboxes"]:
+        print(f"Example transformed bbox: {transformed['bboxes'][0]}")
+    else:
+        print("No transformed bboxes.")
+    print("\nTest finished. If you see this, the transform ran without crashing.")
