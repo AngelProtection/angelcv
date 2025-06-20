@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import shutil
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 import urllib.request
 import zipfile
 
@@ -24,14 +24,14 @@ logger = get_logger(__name__)
 
 
 class DownloadProgressBar(tqdm):
-    def update_to(self, b=1, bsize=1, tsize=None):
+    def update_to(self, b: int = 1, bsize: int = 1, tsize: int | None = None) -> None:
         if tsize is not None:
             self.total = tsize
         self.update(b * bsize - self.n)
 
 
 class CocoDetection(Dataset):
-    def __init__(self, root: str | Path, ann_file: str | Path, transforms: Callable | None = None):
+    def __init__(self, root: str | Path, ann_file: str | Path, transforms: Callable | None = None) -> None:
         self.root = Path(root)
         self.coco = COCO(str(ann_file))
         self.image_ids = list(self.coco.imgs.keys())
@@ -48,10 +48,10 @@ class CocoDetection(Dataset):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
 
-    def _load_target(self, id: int) -> list[dict]:
+    def _load_target(self, id: int) -> list[dict[str, Any]]:
         return self.coco.loadAnns(self.coco.getAnnIds(id))
 
-    def getitem(self, index: int, augment: bool) -> dict | list[dict]:
+    def getitem(self, index: int, augment: bool) -> dict[str, Any] | tuple[np.ndarray, list[dict[str, Any]]]:
         image_id = self.image_ids[index]
         image = self._load_image(image_id)
         target = self._load_target(image_id)
@@ -118,10 +118,10 @@ class CocoDetection(Dataset):
 
         return image, target
 
-    def __getitem__(self, index: int) -> dict[str, Any]:
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, list[dict[str, Any]]]:
         return self.getitem(index, augment=True)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.image_ids)
 
 
@@ -131,10 +131,10 @@ class CocoDataModule(L.LightningDataModule):
     def __init__(
         self,
         config: Config,
-        train_transforms: Optional[Callable] = None,
-        val_transforms: Optional[Callable] = None,
+        train_transforms: Callable | None = None,
+        val_transforms: Callable | None = None,
         task: str = "detection",
-    ):
+    ) -> None:
         """
         PyTorch Lightning DataModule for COCO dataset.
 
@@ -143,8 +143,8 @@ class CocoDataModule(L.LightningDataModule):
             batch_size (int): Batch size for dataloaders
             num_workers (int): Number of subprocesses for data loading
             pin_memory (bool): Use pinned memory for faster data transfer to GPU
-            train_transforms (Optional[Callable]): Optional transform for training data
-            val_transforms (Optional[Callable]): Optional transform for validation data
+            train_transforms (Callable | None): Optional transform for training data
+            val_transforms (Callable | None): Optional transform for validation data
             task (str): COCO dataset task - 'detection' or 'caption'
         """
         super().__init__()
@@ -164,7 +164,7 @@ class CocoDataModule(L.LightningDataModule):
 
         # COCO dataset parameters
         self.task = task
-        self.annotation_files = {
+        self.annotation_files: dict[str, dict[str, str]] = {
             "detection": {
                 "train": "trainval_annotations/instances_train2017.json",
                 "val": "trainval_annotations/instances_val2017.json",
@@ -173,9 +173,9 @@ class CocoDataModule(L.LightningDataModule):
         }
 
         # Placeholders for datasets
-        self.train_dataset = None
-        self.val_dataset = None
-        self.test_dataset = None
+        self.train_dataset: CocoDetection | None = None
+        self.val_dataset: CocoDetection | None = None
+        self.test_dataset: CocoDetection | None = None
 
     def prepare_data(self) -> None:
         """
@@ -233,7 +233,7 @@ class CocoDataModule(L.LightningDataModule):
             if download_dir.exists():
                 shutil.rmtree(download_dir)
 
-    def setup(self, stage: Optional[str] = None) -> None:
+    def setup(self, stage: str | None = None) -> None:
         """
         Setup train, validation, and test datasets.
 
@@ -242,7 +242,7 @@ class CocoDataModule(L.LightningDataModule):
         using DDP.
 
         Args:
-            stage (Optional[str]): "fit", "test", "validate" or "predict" stage
+            stage (str | None): "fit", "test", "validate" or "predict" stage
         """
         # Splitting logic based on stage
         if stage in (None, "fit"):
@@ -252,7 +252,7 @@ class CocoDataModule(L.LightningDataModule):
         if stage in (None, "test"):
             self.test_dataset = self._create_dataset("test")
 
-    def _create_dataset(self, split: str) -> Dataset:
+    def _create_dataset(self, split: str) -> CocoDetection:
         """
         Create dataset for given split.
 
@@ -260,7 +260,7 @@ class CocoDataModule(L.LightningDataModule):
             split (str): train, val, or test
 
         Returns:
-            Dataset: COCO dataset for specified split
+            CocoDetection: COCO dataset for specified split
         """
         if self.task.lower() == "detection":
             transforms = self.train_transforms if split == "train" else self.val_transforms
@@ -276,7 +276,7 @@ class CocoDataModule(L.LightningDataModule):
         else:
             raise ValueError(f"Invalid task: {self.task}")
 
-    def _collate_fn(self, batch: list[tuple[torch.Tensor, dict]]) -> dict[str, torch.Tensor]:
+    def _collate_fn(self, batch: list[tuple[torch.Tensor, list[dict[str, Any]]]]) -> dict[str, torch.Tensor]:
         """
         Custom collate function for batching COCO detection samples.
 
@@ -318,7 +318,7 @@ class CocoDataModule(L.LightningDataModule):
             "labels": labels.unsqueeze(-1),  # shape: (batch_size, max_boxes, 1)
         }
 
-    def train_dataloader(self) -> DataLoader:
+    def train_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict[str, Any]]]]:
         """
         Train DataLoader.
 
@@ -334,7 +334,7 @@ class CocoDataModule(L.LightningDataModule):
             collate_fn=self._collate_fn,
         )
 
-    def val_dataloader(self) -> DataLoader:
+    def val_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict[str, Any]]]]:
         """
         Validation DataLoader.
 
@@ -349,7 +349,7 @@ class CocoDataModule(L.LightningDataModule):
             collate_fn=self._collate_fn,
         )
 
-    def test_dataloader(self) -> DataLoader:
+    def test_dataloader(self) -> DataLoader[tuple[torch.Tensor, list[dict[str, Any]]]]:
         """
         Test DataLoader.
 
