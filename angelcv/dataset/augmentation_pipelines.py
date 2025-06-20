@@ -4,6 +4,8 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from torch.utils.data import Dataset
 
+from angelcv.dataset.custom_transforms import MosaicFromDataset
+
 
 # TODO [MID]: use the config element to setup the augmentation parameters
 def default_train_transforms(max_size: int = 640, dataset: Dataset = None) -> Callable:
@@ -16,6 +18,8 @@ def default_train_transforms(max_size: int = 640, dataset: Dataset = None) -> Ca
     # TODO [MID]: implement mosaic augmentation, not trivial with albumentations framework
     return A.Compose(
         transforms=[
+            # NOTE: mosaic augmentation needs to be before the LongestMaxSize, PadIfNeeded, and Normalize transforms
+            MosaicFromDataset(dataset=dataset, p=0.3),
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size),
             # ---------------- START AUGMENTATION ----------------

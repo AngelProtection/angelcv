@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import shutil
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 import urllib.request
 import zipfile
 
@@ -42,16 +42,16 @@ class CocoDetection(Dataset):
         # image_id to image info dictionary
         self.image_id_to_info = self.coco.imgs
 
-    def _load_image(self, id: int):
+    def _load_image(self, id: int) -> np.ndarray:
         path = self.coco.loadImgs(id)[0]["file_name"]
         image = cv2.imread(str(self.root / path))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         return image
 
-    def _load_target(self, id: int):
+    def _load_target(self, id: int) -> list[dict]:
         return self.coco.loadAnns(self.coco.getAnnIds(id))
 
-    def __getitem__(self, index: int):
+    def getitem(self, index: int, augment: bool) -> dict | list[dict]:
         image_id = self.image_ids[index]
         image = self._load_image(image_id)
         target = self._load_target(image_id)
@@ -87,16 +87,17 @@ class CocoDetection(Dataset):
             # and few bboxes in COCO are 0, so we need to add eps
             xyxy_norm_bboxes = np.clip(xyxy_norm_bboxes, a_min=eps, a_max=1)
 
+        if not augment:
+            # This path is used by Mosaic to get raw data for augmentations
+            return {
+                "image": image,
+                "bboxes": xyxy_norm_bboxes.tolist(),
+                "labels": labels.tolist(),
+            }
+
         # Apply transforms
         if self.transforms:
-            # Create data dictionary with index for Mosaic transform
-            transform_data = {
-                "image": image,
-                "bboxes": xyxy_norm_bboxes,
-                "labels": labels,
-                "index": index,  # Pass the current index for Mosaic to avoid using same image
-            }
-            transformed = self.transforms(**transform_data)
+            transformed = self.transforms(image=image, bboxes=xyxy_norm_bboxes, labels=labels)
             image = transformed["image"]
             bboxes = transformed["bboxes"]
             labels = transformed["labels"]
@@ -116,6 +117,9 @@ class CocoDetection(Dataset):
             )
 
         return image, target
+
+    def __getitem__(self, index: int) -> dict[str, Any]:
+        return self.getitem(index, augment=True)
 
     def __len__(self):
         return len(self.image_ids)
