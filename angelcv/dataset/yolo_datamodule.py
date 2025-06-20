@@ -96,11 +96,31 @@ class YOLODetectionDataset(Dataset):
             # logger.info(f"No label file found for image {image_path}, using as background image.")
             return [], []
 
-    def __getitem__(self, index: int) -> tuple[torch.Tensor, list[dict]]:
+    def getitem(self, index: int, augment: bool) -> dict[str, Any] | tuple[np.ndarray, list[dict[str, Any]]]:
+        """
+        Get item with optional augmentation.
+
+        Args:
+            index: Index of the item to get
+            augment: Whether to apply augmentations
+
+        Returns:
+            If augment=False: dict with 'image', 'bboxes', 'labels' keys (for Mosaic etc.)
+            If augment=True: tuple of (image, target) where target is list of detection dicts
+        """
         image_path = self.image_files[index]
         image = self._load_image(image_path)
         bboxes, labels = self._load_target(image_path)
 
+        if not augment:
+            # This path is used by Mosaic to get raw data for augmentations
+            return {
+                "image": image,
+                "bboxes": bboxes,
+                "labels": labels,
+            }
+
+        # Apply transforms
         if self.transforms:
             # Expecting transforms to work with a dict with keys: 'image', 'bboxes', 'labels'
             transformed = self.transforms(image=image, bboxes=bboxes, labels=labels)
@@ -121,6 +141,9 @@ class YOLODetectionDataset(Dataset):
             )
 
         return image, target
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, list[dict[str, Any]]]:
+        return self.getitem(index, augment=True)
 
 
 class YOLODataModule(L.LightningDataModule):
