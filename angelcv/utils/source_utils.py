@@ -9,7 +9,7 @@ from PIL import Image
 import requests
 import torch
 
-from angelcv.dataset.augmentation import default_val_transforms
+from angelcv.dataset.augmentation_pipelines import default_val_transforms
 
 # Define a type alias for source inputs
 SourceType = str | Path | torch.Tensor | np.ndarray | Image.Image

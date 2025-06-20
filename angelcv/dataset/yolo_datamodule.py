@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 from angelcv.config.config_registry import Config
-from angelcv.dataset.augmentation import default_train_transforms, default_val_transforms
+from angelcv.dataset.augmentation_pipelines import default_train_transforms, default_val_transforms
 from angelcv.utils.logging_manager import get_logger
 
 logger = get_logger(__name__)

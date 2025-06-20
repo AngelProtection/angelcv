@@ -14,7 +14,10 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from angelcv.config.config_registry import Config
-from angelcv.dataset.augmentation import default_train_transforms, default_val_transforms
+from angelcv.dataset.augmentation_pipelines import (
+    default_train_transforms,
+    default_val_transforms,
+)
 from angelcv.utils.logging_manager import get_logger
 
 logger = get_logger(__name__)
@@ -86,7 +89,14 @@ class CocoDetection(Dataset):
 
         # Apply transforms
         if self.transforms:
-            transformed = self.transforms(image=image, bboxes=xyxy_norm_bboxes, labels=labels)
+            # Create data dictionary with index for Mosaic transform
+            transform_data = {
+                "image": image,
+                "bboxes": xyxy_norm_bboxes,
+                "labels": labels,
+                "index": index,  # Pass the current index for Mosaic to avoid using same image
+            }
+            transformed = self.transforms(**transform_data)
             image = transformed["image"]
             bboxes = transformed["bboxes"]
             labels = transformed["labels"]
@@ -143,7 +153,9 @@ class CocoDataModule(L.LightningDataModule):
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         # Default transforms if not provided
-        self.train_transforms = train_transforms or default_train_transforms(max_size=config.train.data.image_size)
+        self.train_transforms = train_transforms or default_train_transforms(
+            max_size=config.train.data.image_size, dataset=self.train_dataset
+        )
         self.val_transforms = val_transforms or default_val_transforms(max_size=config.train.data.image_size)
 
         # COCO dataset parameters
