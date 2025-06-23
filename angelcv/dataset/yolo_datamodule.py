@@ -33,7 +33,7 @@ class YOLODetectionDataset(Dataset):
         labels_dir: str | Path,
         classes: dict[int, str],
         config: Config,
-        stage: Literal["train", "val", "test"] | None = None,
+        stage: Literal["train", "val", "test"],
     ) -> None:
         self.images_dir = Path(images_dir)
         self.labels_dir = Path(labels_dir)
