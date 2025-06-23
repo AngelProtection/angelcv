@@ -379,11 +379,14 @@ class YoloDetectionModel(pl.LightningModule):
 
         # Print them in a formatted way
         stage_title = "Validation" if stage == "val" else "Test"
-        logger.info(f"{stage_title} Epoch End:")
-        logger.info(f"Losses => Total: {loss:.3f} | IoU: {loss_iou:2.3f} | Clf: {loss_clf:2.3f} | Dfl: {loss_dfl:2.3f}")
-        logger.info(
-            f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
-        )
+        if self.trainer.is_global_zero:
+            logger.info(f"{stage_title} Epoch End:")
+            logger.info(
+                f"Losses => Total: {loss:.3f} | IoU: {loss_iou:2.3f} | Clf: {loss_clf:2.3f} | Dfl: {loss_dfl:2.3f}"
+            )
+            logger.info(
+                f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
+            )
 
         # Reset metric states at the end of the epoch
         self.map_metric.reset()  # TODO [LOW]: figure out if required
@@ -542,7 +545,9 @@ class YoloDetectionModel(pl.LightningModule):
             batch: Dictionary containing images and ground truth
             predictions: Dictionary containing model predictions
         """
-        # TODO [LOW]: when training with multiple GPUs, this will overwrite the same files, think how to handle this
+        if not self.trainer.is_global_zero:
+            return
+
         if not self.experiment_dir:
             logger.warning("Experiment directory not set. Skipping visualization.")
             return
@@ -631,6 +636,9 @@ class YoloDetectionModel(pl.LightningModule):
         Creates a CSV file if it doesn't exist, or appends to existing file.
         Uses the self.csv_metrics_config list to determine which metrics to log.
         """
+        if not self.trainer.is_global_zero:
+            return
+
         if not self.experiment_dir:
             logger.warning("Experiment directory not set. Skipping CSV logging.")
             return
