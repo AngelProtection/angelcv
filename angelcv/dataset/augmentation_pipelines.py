@@ -1,3 +1,4 @@
+import math
 from typing import Callable
 
 import albumentations as A
@@ -19,7 +20,12 @@ def default_train_transforms(max_size: int = 640, dataset: Dataset = None) -> Ca
     return A.Compose(
         transforms=[
             # NOTE: mosaic augmentation needs to be before the LongestMaxSize, PadIfNeeded, and Normalize transforms
-            MosaicFromDataset(p=1.0, dataset=dataset, target_size=(max_size, max_size)),  # TODO [LOW]: check
+            MosaicFromDataset(
+                p=1.0,  # TODO [MID]: maybe too much, test!
+                dataset=dataset,
+                target_size=(max_size, max_size),
+                cell_shape=(math.ceil(max_size / 2), math.ceil(max_size / 2)),
+            ),
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size),
             # ---------------- START AUGMENTATION ----------------
