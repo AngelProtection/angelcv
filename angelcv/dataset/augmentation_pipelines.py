@@ -19,26 +19,27 @@ def default_train_transforms(max_size: int = 640, dataset: Dataset = None) -> Ca
     return A.Compose(
         transforms=[
             # NOTE: mosaic augmentation needs to be before the LongestMaxSize, PadIfNeeded, and Normalize transforms
-            MosaicFromDataset(dataset=dataset, target_size=(max_size, max_size), p=0.3),
+            MosaicFromDataset(dataset=dataset, target_size=(max_size, max_size), p=1.0),  # TODO [LOW]: check
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size),
             # ---------------- START AUGMENTATION ----------------
-            A.Affine(p=0.2, rotate=(-30, 30), shear=(-10, 10), scale=(0.8, 1.2), translate_percent=(0.1, 0.2)),
+            A.Affine(p=0.5, rotate=(0, 15), translate_percent=0.1, scale=(0.5, 1.5), shear=(0, 10)),
+            A.HueSaturationValue(hue_shift_limit=20, sat_shift_limit=30, val_shift_limit=20, p=0.5),
+            # A.RandomBrightnessContrast(p=0.1),
+            # A.RandomGamma(p=0.1),
             A.OneOf(
                 [
                     A.Blur(blur_limit=(3, 7)),
                     A.MedianBlur(blur_limit=3),
                     A.GaussianBlur(blur_limit=(3, 7)),
+                    A.ImageCompression(quality_range=(70, 90)),
                 ],
-                p=0.3,
-            ),  # 30% chance of applying one of these blur operations
-            A.ToGray(p=0.05),
-            A.CLAHE(p=0.1),
-            A.RandomBrightnessContrast(p=0.1),
-            A.RandomGamma(p=0.1),
-            # A.ImageCompression(quality_range=(70, 90), p=0.2),  # TODO: uncomment (training server issues)
-            A.HorizontalFlip(p=0.3),
-            A.VerticalFlip(p=0.3),
+                p=0.05,
+            ),
+            A.ToGray(p=0.01),
+            A.CLAHE(p=0.01),
+            A.HorizontalFlip(p=0.5),
+            A.VerticalFlip(p=0.01),
             # ----------------- END AUGMENTATION -----------------
             A.Normalize(mean=0, std=1, max_pixel_value=255),  # This divides by 255
             ToTensorV2(),
