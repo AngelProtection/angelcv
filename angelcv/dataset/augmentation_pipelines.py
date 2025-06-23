@@ -19,7 +19,7 @@ def default_train_transforms(max_size: int = 640, dataset: Dataset = None) -> Ca
     return A.Compose(
         transforms=[
             # NOTE: mosaic augmentation needs to be before the LongestMaxSize, PadIfNeeded, and Normalize transforms
-            MosaicFromDataset(dataset=dataset, p=0.3),
+            MosaicFromDataset(dataset=dataset, target_size=(max_size, max_size), p=0.3),
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size),
             # ---------------- START AUGMENTATION ----------------
@@ -32,7 +32,7 @@ def default_train_transforms(max_size: int = 640, dataset: Dataset = None) -> Ca
                 ],
                 p=0.3,
             ),  # 30% chance of applying one of these blur operations
-            A.ToGray(p=0.1),
+            A.ToGray(p=0.05),
             A.CLAHE(p=0.1),
             A.RandomBrightnessContrast(p=0.1),
             A.RandomGamma(p=0.1),
