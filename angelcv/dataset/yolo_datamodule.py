@@ -39,6 +39,7 @@ class YOLODetectionDataset(Dataset):
         self.labels_dir = Path(labels_dir)
         self.classes = classes  # e.g. {0: "person", 1: "car", ...}
         self.config = config
+        self.transforms = None
 
         # Allowed image extensions; adjust if necessary
         allowed_exts = {".jpg", ".jpeg", ".png", ".webp"}
@@ -47,8 +48,10 @@ class YOLODetectionDataset(Dataset):
         # Create transforms
         if stage == "train":
             self.transforms = default_train_transforms(max_size=self.config.train.data.image_size, dataset=self)
-        if stage in ("val", "test"):
+        elif stage in ("val", "test"):
             self.transforms = default_val_transforms(max_size=self.config.train.data.image_size)
+        else:
+            raise ValueError(f"Invalid stage: {stage}")
 
     def __len__(self) -> int:
         return len(self.image_files)
