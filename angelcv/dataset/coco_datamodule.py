@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import shutil
-from typing import Callable
+from typing import Literal
 import urllib.request
 import zipfile
 
@@ -31,11 +31,26 @@ class DownloadProgressBar(tqdm):
 
 
 class CocoDetection(Dataset):
-    def __init__(self, root: str | Path, ann_file: str | Path, transforms: Callable | None = None) -> None:
+    def __init__(
+        self,
+        root: str | Path,
+        ann_file: str | Path,
+        config: Config,
+        stage: Literal["train", "val", "test"],
+    ) -> None:
         self.root = Path(root)
         self.coco = COCO(str(ann_file))
         self.image_ids = list(self.coco.imgs.keys())
-        self.transforms = transforms
+        self.config = config
+        self.transforms = None
+
+        # Create transforms
+        if stage == "train":
+            self.transforms = default_train_transforms(max_size=self.config.train.data.image_size, dataset=self)
+        elif stage in ("val", "test"):
+            self.transforms = default_val_transforms(max_size=self.config.train.data.image_size)
+        else:
+            raise ValueError(f"Invalid stage: {stage}")
 
         # Create category ID mapping
         self.cat_mapping = {cat: idx for idx, cat in enumerate(self.coco.getCatIds())}
@@ -131,36 +146,24 @@ class CocoDataModule(L.LightningDataModule):
     def __init__(
         self,
         config: Config,
-        train_transforms: Callable | None = None,
-        val_transforms: Callable | None = None,
         task: str = "detection",
     ) -> None:
         """
         PyTorch Lightning DataModule for COCO dataset.
 
         Args:
-            data_dir (Path): Root directory for COCO dataset
-            batch_size (int): Batch size for dataloaders
-            num_workers (int): Number of subprocesses for data loading
-            pin_memory (bool): Use pinned memory for faster data transfer to GPU
-            train_transforms (Callable | None): Optional transform for training data
-            val_transforms (Callable | None): Optional transform for validation data
+            config (Config): Configuration object for the dataset.
             task (str): COCO dataset task - 'detection' or 'caption'
         """
         super().__init__()
 
         self.config = config
+
         self.data_dir = Path(config.dataset.path).expanduser()
         self.num_workers = max(1, os.cpu_count() // 2) if config.num_workers == -1 else config.num_workers
 
         # Create data directory if it doesn't exist
         self.data_dir.mkdir(parents=True, exist_ok=True)
-
-        # Default transforms if not provided
-        self.train_transforms = train_transforms or default_train_transforms(
-            max_size=config.train.data.image_size, dataset=self.train_dataset
-        )
-        self.val_transforms = val_transforms or default_val_transforms(max_size=config.train.data.image_size)
 
         # COCO dataset parameters
         self.task = task
@@ -263,15 +266,14 @@ class CocoDataModule(L.LightningDataModule):
             CocoDetection: COCO dataset for specified split
         """
         if self.task.lower() == "detection":
-            transforms = self.train_transforms if split == "train" else self.val_transforms
-
             # Use the correct annotation file for the split
             ann_file = self.annotation_files["detection"][split]
 
             return CocoDetection(
                 root=self.data_dir / f"{split}2017",
                 ann_file=self.data_dir / ann_file,
-                transforms=transforms,
+                config=self.config,
+                stage=split,
             )
         else:
             raise ValueError(f"Invalid task: {self.task}")
