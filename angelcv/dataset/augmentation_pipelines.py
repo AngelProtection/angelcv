@@ -19,7 +19,7 @@ def default_train_transforms(max_size: int = 640, dataset: Dataset = None) -> Ca
     return A.Compose(
         transforms=[
             # NOTE: mosaic augmentation needs to be before the LongestMaxSize, PadIfNeeded, and Normalize transforms
-            MosaicFromDataset(dataset=dataset, target_size=(max_size, max_size), p=1.0),  # TODO [LOW]: check
+            MosaicFromDataset(p=1.0, dataset=dataset, target_size=(max_size, max_size)),  # TODO [LOW]: check
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size),
             # ---------------- START AUGMENTATION ----------------
