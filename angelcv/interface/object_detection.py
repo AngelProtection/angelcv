@@ -366,7 +366,7 @@ class ObjectDetectionModel:
         kwargs["callbacks"] = train_callbacks
 
         # Setup logger
-        tb_logger = TensorBoardLogger(save_dir=experiment_dir, name="tb_logs")
+        tb_logger = TensorBoardLogger(save_dir=experiment_dir, name="tb_logs", version="")
 
         # Create trainer
         trainer_kwargs = {
