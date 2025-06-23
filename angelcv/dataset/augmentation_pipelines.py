@@ -24,9 +24,7 @@ def default_train_transforms(max_size: int = 640, dataset: Dataset = None) -> Ca
             A.PadIfNeeded(min_height=max_size, min_width=max_size),
             # ---------------- START AUGMENTATION ----------------
             A.Affine(p=0.5, rotate=(0, 15), translate_percent=0.1, scale=(0.5, 1.5), shear=(0, 10)),
-            A.HueSaturationValue(hue_shift_limit=20, sat_shift_limit=30, val_shift_limit=20, p=0.5),
-            # A.RandomBrightnessContrast(p=0.1),
-            # A.RandomGamma(p=0.1),
+            A.HueSaturationValue(p=0.8, hue_shift_limit=5, sat_shift_limit=175, val_shift_limit=100),
             A.OneOf(
                 [
                     A.Blur(blur_limit=(3, 7)),
