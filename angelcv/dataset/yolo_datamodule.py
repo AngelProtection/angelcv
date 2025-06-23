@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Callable
+from typing import Literal
 
 import cv2
 import lightning as L
@@ -32,16 +32,23 @@ class YOLODetectionDataset(Dataset):
         images_dir: str | Path,
         labels_dir: str | Path,
         classes: dict[int, str],
-        transforms: Callable | None = None,
+        config: Config,
+        stage: Literal["train", "val", "test"] | None = None,
     ) -> None:
         self.images_dir = Path(images_dir)
         self.labels_dir = Path(labels_dir)
         self.classes = classes  # e.g. {0: "person", 1: "car", ...}
-        self.transforms = transforms
+        self.config = config
 
         # Allowed image extensions; adjust if necessary
         allowed_exts = {".jpg", ".jpeg", ".png", ".webp"}
         self.image_files = sorted([p for p in self.images_dir.iterdir() if p.suffix.lower() in allowed_exts])
+
+        # Create transforms
+        if stage == "train":
+            self.transforms = default_train_transforms(max_size=self.config.train.data.image_size, dataset=self)
+        if stage in ("val", "test"):
+            self.transforms = default_val_transforms(max_size=self.config.train.data.image_size)
 
     def __len__(self) -> int:
         return len(self.image_files)
@@ -161,8 +168,6 @@ class YOLODataModule(L.LightningDataModule):
     def __init__(
         self,
         config: Config,
-        train_transforms: Callable | None = None,
-        val_transforms: Callable | None = None,
     ) -> None:
         super().__init__()
 
@@ -183,9 +188,6 @@ class YOLODataModule(L.LightningDataModule):
         self.train_labels_dir = self._get_labels_dir(self.train_dir)
         self.val_labels_dir = self._get_labels_dir(self.val_dir)
         self.test_labels_dir = self._get_labels_dir(self.test_dir) if self.test_dir is not None else None
-
-        self.train_transforms = train_transforms or default_train_transforms(max_size=config.train.data.image_size)
-        self.val_transforms = val_transforms or default_val_transforms(max_size=config.train.data.image_size)
 
         self.train_dataset: YOLODetectionDataset | None = None
         self.val_dataset: YOLODetectionDataset | None = None
@@ -229,13 +231,15 @@ class YOLODataModule(L.LightningDataModule):
                 images_dir=self.train_dir,
                 labels_dir=self.train_labels_dir,
                 classes=self.config.dataset.names,
-                transforms=self.train_transforms,
+                config=self.config,
+                stage="train",
             )
             self.val_dataset = YOLODetectionDataset(
                 images_dir=self.val_dir,
                 labels_dir=self.val_labels_dir,
                 classes=self.config.dataset.names,
-                transforms=self.val_transforms,
+                config=self.config,
+                stage="val",
             )
 
         if stage in (None, "test") and self.test_dir is not None:
@@ -243,7 +247,8 @@ class YOLODataModule(L.LightningDataModule):
                 images_dir=self.test_dir,
                 labels_dir=self.test_labels_dir,
                 classes=self.config.dataset.names,
-                transforms=self.val_transforms,
+                config=self.config,
+                stage="test",
             )
 
     def _collate_fn(self, batch: list[tuple[torch.Tensor, list[dict]]]) -> dict[str, torch.Tensor]:
