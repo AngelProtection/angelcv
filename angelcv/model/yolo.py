@@ -108,7 +108,8 @@ class YoloDetectionModel(pl.LightningModule):
             ("map/small/val", "map/small/val"),
             ("map/medium/val", "map/medium/val"),
             ("map/large/val", "map/large/val"),
-            ("lr", "lr-AdamW"),
+            ("SequentialLR/pg1", "SequentialLR/pg1"),
+            ("SequentialLR/pg2", "SequentialLR/pg2"),
         ]
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
@@ -389,10 +390,6 @@ class YoloDetectionModel(pl.LightningModule):
 
     def on_validation_epoch_end(self):
         self._common_eval_epoch_end("val")
-
-        # Log current learning rate for CSV tracking
-        current_lr = self.optimizers().param_groups[0]["lr"]
-        self.log("lr-AdamW", current_lr, on_epoch=True, logger=False)
 
         self._log_metrics_to_csv()
 
