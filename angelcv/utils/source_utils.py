@@ -3,13 +3,12 @@ from io import BytesIO
 from pathlib import Path
 
 import albumentations as A
+from albumentations.pytorch import ToTensorV2
 from einops import rearrange
 import numpy as np
 from PIL import Image
 import requests
 import torch
-
-from angelcv.dataset.augmentation_pipelines import default_val_transforms
 
 # Define a type alias for source inputs
 SourceType = str | Path | torch.Tensor | np.ndarray | Image.Image
@@ -291,8 +290,16 @@ def transform_image_for_inference(
         h, w = img.shape[:2]
         image_size = max(h, w)
 
-    # Create transforms based on default_val_transforms but without bbox_params
-    transforms_list = default_val_transforms(max_size=image_size).transforms
+    # Create transforms manually for inference (same as builds_val_transfors, without config)
+    transforms_list = A.Compose(
+        transforms=[
+            A.LongestMaxSize(max_size=image_size),
+            A.PadIfNeeded(min_height=image_size, min_width=image_size),
+            A.Normalize(mean=0, std=1, max_pixel_value=255),  # This divides by 255
+            ToTensorV2(),
+        ],
+        bbox_params=A.BboxParams(format="albumentations", label_fields=["labels"]),
+    ).transforms
 
     # Create a separate transforms for tracking parameters
     # We need to include bbox_params to ensure the transformation parameters are tracked

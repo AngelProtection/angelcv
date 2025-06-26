@@ -15,8 +15,8 @@ from tqdm import tqdm
 
 from angelcv.config.config_registry import Config
 from angelcv.dataset.augmentation_pipelines import (
-    default_train_transforms,
-    default_val_transforms,
+    build_training_transforms,
+    build_val_transforms,
 )
 from angelcv.utils.logging_manager import get_logger
 
@@ -46,9 +46,9 @@ class CocoDetection(Dataset):
 
         # Create transforms
         if stage == "train":
-            self.transforms = default_train_transforms(max_size=self.config.train.data.image_size, dataset=self)
+            self.transforms = build_training_transforms(config=self.config, dataset=self)
         elif stage in ("val", "test"):
-            self.transforms = default_val_transforms(max_size=self.config.train.data.image_size)
+            self.transforms = build_val_transforms(config=self.config)
         else:
             raise ValueError(f"Invalid stage: {stage}")
 

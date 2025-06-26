@@ -5,14 +5,23 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from torch.utils.data import Dataset
 
+from angelcv.config.config_registry import Config
 from angelcv.dataset.custom_transforms import MosaicFromDataset
 
 
-# TODO [MID]: use the config element to setup the augmentation parameters
-def default_train_transforms(max_size: int = 640, dataset: Dataset = None) -> Callable:
+def build_training_transforms(config: Config, dataset: Dataset = None) -> Callable:
     """
-    Default training data transformations.
+    Build training data transformations based on configuration.
+
+    Args:
+        config: Full configuration object containing training parameters
+        dataset: Dataset instance for mosaic augmentation (optional)
+
+    Returns:
+        Callable: Composed albumentations transforms for training
     """
+    max_size = config.train.data.image_size
+
     # NOTE: doesn't seem necessary to normalize the images with ImageNet values
     # A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     # simply dividing by 255
@@ -52,10 +61,18 @@ def default_train_transforms(max_size: int = 640, dataset: Dataset = None) -> Ca
     )
 
 
-def default_val_transforms(max_size: int = 640) -> Callable:
+def build_val_transforms(config: Config) -> Callable:
     """
-    Default validation/test data transformations.
+    Build validation/test data transformations based on configuration.
+
+    Args:
+        config: Full configuration object containing validation parameters
+
+    Returns:
+        Callable: Composed albumentations transforms for validation/testing
     """
+    max_size = config.validation.data.image_size
+
     # NOTE: doens't seem necessary to normalize the iamges with ImageNet values
     # A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     # simply dividing by 255
@@ -115,10 +132,8 @@ if __name__ == "__main__":
     # Create CocoDataModule with train_transforms set to val_transforms (no augmentations)
     datamodule = CocoDataModule(
         config,
-        train_transforms=default_val_transforms(
-            max_size=config.train.data.image_size
-        ),  # Use val transforms for train too
-        val_transforms=default_val_transforms(max_size=config.train.data.image_size),
+        train_transforms=build_val_transforms(config),  # Use val transforms for train too
+        val_transforms=build_val_transforms(config),
     )
     datamodule.prepare_data()
     datamodule.setup()
@@ -127,9 +142,7 @@ if __name__ == "__main__":
     val_loader = datamodule.val_dataloader()
 
     # Create augmentation transforms to apply manually
-    augmentation_transforms = default_train_transforms(
-        max_size=config.train.data.image_size, dataset=datamodule.train_dataset
-    )
+    augmentation_transforms = build_training_transforms(config, datamodule.train_dataset)
 
     # Generate colors for classes
     num_classes = len(config.dataset.names)
