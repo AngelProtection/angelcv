@@ -1,4 +1,3 @@
-import math
 from typing import Callable
 
 import albumentations as A
@@ -37,7 +36,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
                 p=1.0,  # TODO [MID]: maybe too much, test!
                 dataset=dataset,
                 target_size=(max_size, max_size),
-                cell_shape=(math.ceil(max_size / 2), math.ceil(max_size / 2)),
+                cell_shape=(max_size, max_size),
                 fill=AUGMENTATION_BG_COLOR,
             ),
             A.Affine(
