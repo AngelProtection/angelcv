@@ -10,6 +10,8 @@ from PIL import Image
 import requests
 import torch
 
+from angelcv.dataset.augmentation_pipelines import AUGMENTATION_BG_COLOR
+
 # Define a type alias for source inputs
 SourceType = str | Path | torch.Tensor | np.ndarray | Image.Image
 
@@ -294,7 +296,7 @@ def transform_image_for_inference(
     transforms_list = A.Compose(
         transforms=[
             A.LongestMaxSize(max_size=image_size),
-            A.PadIfNeeded(min_height=image_size, min_width=image_size),
+            A.PadIfNeeded(min_height=image_size, min_width=image_size, fill=AUGMENTATION_BG_COLOR),
             A.Normalize(mean=0, std=1, max_pixel_value=255),  # This divides by 255
             ToTensorV2(),
         ],
