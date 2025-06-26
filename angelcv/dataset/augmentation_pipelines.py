@@ -31,19 +31,21 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
     # TODO [MID]: set the probabilities and key parameters from the config
     return A.Compose(
         transforms=[
-            # NOTE: mosaic augmentation needs to be before the LongestMaxSize, PadIfNeeded, and Normalize transforms
+            # NOTE: Mosaic augmentation creates a canvas of size (cell_shape * grid_yx), then crops a random region of
+            # size target_size. Using target_size=max_size*1.5 to avoid losing resolution in case of zooming.
             MosaicFromDataset(
                 p=1.0,  # TODO [MID]: maybe too much, test!
-                dataset=dataset,
-                target_size=(int(max_size * 1.5), int(max_size * 1.5)),
-                cell_shape=(int(max_size * 1.5), int(max_size * 1.5)),
+                dataset=dataset,  # Getting images from the entire dataset
+                target_size=(int(max_size * 1.5), int(max_size * 1.5)),  # Size of random crop of canvas
+                cell_shape=(int(max_size * 1.5), int(max_size * 1.5)),  # Space allocated for each cell
+                center_range=(0.1, 0.9),  # Range of center point of the mosaic view relative to central region
                 fill=AUGMENTATION_BG_COLOR,
             ),
             # NOTE: Affine before LongestMaxSize to not lose resolution in case of zooming
             A.Affine(
                 p=0.5,
                 rotate=0,
-                translate_percent=(-0.3, 0.3),
+                translate_percent=(-0.05, 0.05),
                 scale=(0.5, 1.5),
                 shear=0,
                 fill=AUGMENTATION_BG_COLOR,
