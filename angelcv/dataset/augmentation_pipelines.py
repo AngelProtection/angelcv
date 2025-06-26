@@ -129,28 +129,24 @@ if __name__ == "__main__":
     # Create config element
     config = ConfigManager.upsert_config(dataset_file="coco.yaml")
 
-    # Create CocoDataModule with train_transforms set to val_transforms (no augmentations)
-    datamodule = CocoDataModule(
-        config,
-        train_transforms=build_val_transforms(config),  # Use val transforms for train too
-        val_transforms=build_val_transforms(config),
-    )
+    # Create CocoDataModule with default transforms (val transforms have no augmentation)
+    datamodule = CocoDataModule(config)
     datamodule.prepare_data()
     datamodule.setup()
 
-    train_loader = datamodule.train_dataloader()
+    # Use validation loader (which has no augmentations)
     val_loader = datamodule.val_dataloader()
 
     # Create augmentation transforms to apply manually
-    augmentation_transforms = build_training_transforms(config, datamodule.train_dataset)
+    augmentation_transforms = build_training_transforms(config, datamodule.val_dataset)
 
     # Generate colors for classes
     num_classes = len(config.dataset.names)
     colors = generate_distinct_colors(num_classes)
 
     n_samples = 50
-    for i, batch in enumerate(train_loader):
-        images_original = batch["images"]  # Shape: (B, C, H, W)
+    for i, batch in enumerate(val_loader):
+        images_original = batch["images"]  # Shape: (B, C, H, W) - no augmentations applied
         boxes_original = batch["boxes"]  # Shape: (B, max_boxes, 4)
         labels_original = batch["labels"].squeeze(-1)  # Shape: (B, max_boxes)
 
@@ -189,7 +185,7 @@ if __name__ == "__main__":
         # Stack augmented images back to batch
         images_augmented = torch.stack(augmented_images)
 
-        # Draw bounding boxes on original images
+        # Draw bounding boxes on original images (no augmentations)
         images_original_with_boxes = []
         for img_idx in range(images_original.shape[0]):
             img_with_boxes = draw_bboxes_on_image(
@@ -222,16 +218,16 @@ if __name__ == "__main__":
         # Create side-by-side comparison
         fig, axes = plt.subplots(1, 2, figsize=(15, 10))
 
-        # Original images grid with bboxes
+        # Original images grid with bboxes (from validation set - no augmentation)
         grid_original = vutils.make_grid(images_original_with_boxes, nrow=4, normalize=True, scale_each=True)
         axes[0].imshow(grid_original.permute(1, 2, 0).cpu().numpy())
-        axes[0].set_title(f"Batch {i} - Original (No Augmentation) - shape: {images_original.shape}")
+        axes[0].set_title(f"Batch {i} - Original (Validation - No Augmentation) - shape: {images_original.shape}")
         axes[0].axis("off")
 
-        # Augmented images grid with bboxes
+        # Augmented images grid with bboxes (manually applied training augmentations)
         grid_augmented = vutils.make_grid(images_augmented_with_boxes, nrow=4, normalize=True, scale_each=True)
         axes[1].imshow(grid_augmented.permute(1, 2, 0).cpu().numpy())
-        axes[1].set_title(f"Batch {i} - With Augmentation - shape: {images_augmented.shape}")
+        axes[1].set_title(f"Batch {i} - With Training Augmentation - shape: {images_augmented.shape}")
         axes[1].axis("off")
 
         plt.tight_layout()
