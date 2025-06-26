@@ -38,7 +38,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size),
             # ---------------- START AUGMENTATION ----------------
-            A.Affine(p=0.5, rotate=(0, 15), translate_percent=0.1, scale=(0.5, 1.5), shear=(0, 10)),
+            A.Affine(p=0.5, rotate=0, translate_percent=(-0.3, 0.3), scale=(0.5, 1.5), shear=0),
             A.HueSaturationValue(p=0.8, hue_shift_limit=5, sat_shift_limit=70, val_shift_limit=80),
             A.OneOf(
                 [
