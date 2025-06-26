@@ -14,7 +14,7 @@ def is_debug_mode() -> bool:
     # Check if we're running under PyCharm debugger
     if "pydevd" in sys.modules:
         try:
-            import pydevd
+            import pydevd  # type: ignore # noqa: I001
 
             return pydevd.GetGlobalDebugger() is not None
         except (ImportError, AttributeError):
@@ -37,7 +37,7 @@ def is_debug_mode() -> bool:
     # Check if we're in an IPython environment with debugger
     if "IPython" in sys.modules:
         try:
-            from IPython import get_ipython
+            from IPython import get_ipython  # type: ignore # noqa: I001
 
             ipython = get_ipython()
             if ipython is not None:
