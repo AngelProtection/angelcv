@@ -40,8 +40,6 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
                 cell_shape=(math.ceil(max_size / 2), math.ceil(max_size / 2)),
                 fill=AUGMENTATION_BG_COLOR,
             ),
-            A.LongestMaxSize(max_size=max_size),
-            A.PadIfNeeded(min_height=max_size, min_width=max_size, fill=AUGMENTATION_BG_COLOR),
             A.Affine(
                 p=0.5,
                 rotate=0,
@@ -50,6 +48,8 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
                 shear=0,
                 fill=AUGMENTATION_BG_COLOR,
             ),
+            A.LongestMaxSize(max_size=max_size),
+            A.PadIfNeeded(min_height=max_size, min_width=max_size, fill=AUGMENTATION_BG_COLOR),
             A.HueSaturationValue(p=0.8, hue_shift_limit=5, sat_shift_limit=70, val_shift_limit=80),
             A.OneOf(
                 [
