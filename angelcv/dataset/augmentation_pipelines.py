@@ -42,7 +42,6 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
             ),
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size, fill=AUGMENTATION_BG_COLOR),
-            # ---------------- START AUGMENTATION ----------------
             A.Affine(
                 p=0.5,
                 rotate=0,
@@ -65,7 +64,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
             A.CLAHE(p=0.01),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.01),
-            # ----------------- END AUGMENTATION -----------------
+            # ----------------- FORMAT TRANSFORMS -----------------
             A.Normalize(mean=0, std=1, max_pixel_value=255),  # This divides by 255
             ToTensorV2(),
         ],
