@@ -382,10 +382,11 @@ class YoloDetectionModel(pl.LightningModule):
         if self.trainer.is_global_zero:
             logger.info(f"{stage_title} Epoch End:")
             logger.info(
-                f"Losses => Total: {loss:.3f} | IoU: {loss_iou:2.3f} | Clf: {loss_clf:2.3f} | Dfl: {loss_dfl:2.3f}"
+                f"Losses =>  Total: {loss:.3f} | IoU: {loss_iou:2.3f} | Clf: {loss_clf:2.3f} | Dfl: {loss_dfl:2.3f}"
             )
             logger.info(
-                f"mAP    => Total: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | @75: {map_dict['map_75']:2.3f}"
+                f"mAP    => @50-95: {map_dict['map']:2.3f} | @50: {map_dict['map_50']:2.3f} | "
+                f"@75: {map_dict['map_75']:2.3f}"
             )
 
         # Reset metric states at the end of the epoch
