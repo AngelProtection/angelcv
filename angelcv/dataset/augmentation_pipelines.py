@@ -39,7 +39,6 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
                 target_size=(max_size, max_size),
                 cell_shape=(math.ceil(max_size / 2), math.ceil(max_size / 2)),
                 fill=AUGMENTATION_BG_COLOR,
-                background_value=AUGMENTATION_BG_COLOR,
             ),
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size, fill=AUGMENTATION_BG_COLOR),
