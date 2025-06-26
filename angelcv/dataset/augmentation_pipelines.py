@@ -25,7 +25,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
     # NOTE: doesn't seem necessary to normalize the images with ImageNet values
     # A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     # simply dividing by 255
-    # TODO [MID]: implement mosaic augmentation, not trivial with albumentations framework
+    # TODO [MID]: set the probabilities and key parameters from the config
     return A.Compose(
         transforms=[
             # NOTE: mosaic augmentation needs to be before the LongestMaxSize, PadIfNeeded, and Normalize transforms
