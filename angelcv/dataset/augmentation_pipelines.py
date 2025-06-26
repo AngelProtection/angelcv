@@ -35,10 +35,11 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
             MosaicFromDataset(
                 p=1.0,  # TODO [MID]: maybe too much, test!
                 dataset=dataset,
-                target_size=(max_size, max_size),
-                cell_shape=(max_size, max_size),
+                target_size=(int(max_size * 1.5), int(max_size * 1.5)),
+                cell_shape=(int(max_size * 1.5), int(max_size * 1.5)),
                 fill=AUGMENTATION_BG_COLOR,
             ),
+            # NOTE: Affine before LongestMaxSize to not lose resolution in case of zooming
             A.Affine(
                 p=0.5,
                 rotate=0,
