@@ -8,6 +8,10 @@ from torch.utils.data import Dataset
 from angelcv.config.config_registry import Config
 from angelcv.dataset.custom_transforms import MosaicFromDataset
 
+# NOTE: Using (114, 114, 114) because 114/255 = 0.447, which is similar to the mean pixel value of ImageNet.
+# This background color is used in augmentation for many Computer Vision models, including YOLO.
+AUGMENTATION_BG_COLOR = (114, 114, 114)
+
 
 def build_training_transforms(config: Config, dataset: Dataset = None) -> Callable:
     """
@@ -34,11 +38,20 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
                 dataset=dataset,
                 target_size=(max_size, max_size),
                 cell_shape=(math.ceil(max_size / 2), math.ceil(max_size / 2)),
+                fill=AUGMENTATION_BG_COLOR,
+                background_value=AUGMENTATION_BG_COLOR,
             ),
             A.LongestMaxSize(max_size=max_size),
-            A.PadIfNeeded(min_height=max_size, min_width=max_size),
+            A.PadIfNeeded(min_height=max_size, min_width=max_size, fill=AUGMENTATION_BG_COLOR),
             # ---------------- START AUGMENTATION ----------------
-            A.Affine(p=0.5, rotate=0, translate_percent=(-0.3, 0.3), scale=(0.5, 1.5), shear=0),
+            A.Affine(
+                p=0.5,
+                rotate=0,
+                translate_percent=(-0.3, 0.3),
+                scale=(0.5, 1.5),
+                shear=0,
+                fill=AUGMENTATION_BG_COLOR,
+            ),
             A.HueSaturationValue(p=0.8, hue_shift_limit=5, sat_shift_limit=70, val_shift_limit=80),
             A.OneOf(
                 [
@@ -79,7 +92,7 @@ def build_val_transforms(config: Config) -> Callable:
     return A.Compose(
         transforms=[
             A.LongestMaxSize(max_size=max_size),
-            A.PadIfNeeded(min_height=max_size, min_width=max_size),
+            A.PadIfNeeded(min_height=max_size, min_width=max_size, fill=AUGMENTATION_BG_COLOR),
             A.Normalize(mean=0, std=1, max_pixel_value=255),  # This divides by 255
             ToTensorV2(),
         ],
