@@ -10,6 +10,7 @@ from angelcv.dataset.custom_transforms import MosaicFromDataset
 # NOTE: Using (114, 114, 114) because 114/255 = 0.447, which is similar to the mean pixel value of ImageNet.
 # This background color is used in augmentation for many Computer Vision models, including YOLO.
 AUGMENTATION_BG_COLOR = (114, 114, 114)
+# TODO [LOW]: test with (124, 116, 103), average value pixel of ImageNet (RGB)
 
 
 def build_training_transforms(config: Config, dataset: Dataset = None) -> Callable:
