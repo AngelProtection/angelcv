@@ -23,7 +23,7 @@ else:
         max_epochs=900,
         patience=50,
         image_size=640,
-        batch_size=16,
+        batch_size=8,
         devices=-1,  # all devices
         num_workers=-1,
     )
