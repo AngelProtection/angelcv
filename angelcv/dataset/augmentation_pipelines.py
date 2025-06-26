@@ -128,6 +128,7 @@ if __name__ == "__main__":
 
     # Create config element
     config = ConfigManager.upsert_config(dataset_file="coco.yaml")
+    config.train.data.batch_size = 8
 
     # Create CocoDataModule with default transforms (val transforms have no augmentation)
     datamodule = CocoDataModule(config)
