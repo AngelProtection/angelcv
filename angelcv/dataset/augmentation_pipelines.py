@@ -50,6 +50,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
             ),
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size, fill=AUGMENTATION_BG_COLOR),
+            # -------------- TRANSFORMS WITHOUT RESIZE --------------
             A.HueSaturationValue(p=0.8, hue_shift_limit=5, sat_shift_limit=70, val_shift_limit=80),
             A.OneOf(
                 [
