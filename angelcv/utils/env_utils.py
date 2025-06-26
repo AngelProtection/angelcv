@@ -13,3 +13,7 @@ def is_debug_mode() -> bool:
         bool: True if a known debugger module is loaded (i.e., debugging is likely active), False otherwise.
     """
     return any(mod in sys.modules for mod in ["pydevd", "ptvsd", "pdb", "IPython"])
+
+
+if __name__ == "__main__":
+    print("is_debug_mode():", is_debug_mode())
