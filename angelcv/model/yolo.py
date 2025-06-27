@@ -45,12 +45,8 @@ class YoloDetectionModel(pl.LightningModule):
 
     def __init__(self, config: Config):
         """
-        Initialize YOLOv10 detection model.
-
         Args:
-            config_path: Path to model config file or config dictionary
-            in_channels: Number of input image channels
-            num_classes: Optional override for number of detection classes
+            config: Model configuration.
         """
         super().__init__()
 
