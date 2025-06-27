@@ -63,7 +63,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
                     p=1.0,
                     rotate=0,
                     translate_percent=(-0.1, 0.1),
-                    scale=(0.5, 1.5),  # Not much zoom out as already zoomed out by mosaic
+                    scale=(0.7, 1.3),
                     shear=0,
                     fill=AUGMENTATION_BG_COLOR,
                 ),
