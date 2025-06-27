@@ -32,24 +32,41 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
     # TODO [MID]: set the probabilities and key parameters from the config
     return A.Compose(
         transforms=[
-            # NOTE: Mosaic augmentation creates a canvas of size (cell_shape * grid_yx), then crops a random region of
-            # size target_size. target_size needs to be larger than max_size to avoid losing resolution if zooming.
-            # If target_size = cell_shape * grid_yx, then the mosaic will be a perfect square.
-            MosaicFromDataset(
-                p=1.0,  # TODO [MID]: maybe too much, test!
-                dataset=dataset,  # Getting images from the entire dataset
-                target_size=(int(max_size * 2), int(max_size * 2)),  # Size of random crop of canvas
-                cell_shape=(max_size, max_size),  # Space allocated for each cell
-                fill=AUGMENTATION_BG_COLOR,
-            ),
-            # NOTE: Affine before LongestMaxSize to not lose resolution in case of zooming
-            A.Affine(
-                p=1.0,
-                rotate=0,
-                translate_percent=(-0.35, 0.35),
-                scale=(0.95, 1.6),  # Not much zoom out as already zoomed out by mosaic
-                shear=0,
-                fill=AUGMENTATION_BG_COLOR,
+            A.OneOrOther(
+                first=A.Sequential(  # MosaicFromDatase + Affine
+                    p=1.0,
+                    transforms=[
+                        # NOTE: Mosaic augmentation creates a canvas of size (cell_shape * grid_yx), then crops a
+                        # random region of size target_size. target_size needs to be larger than max_size to avoid
+                        # losing resolution if zooming.
+                        # If target_size = cell_shape * grid_yx, then the mosaic will be a perfect square.
+                        MosaicFromDataset(
+                            p=1.0,
+                            dataset=dataset,  # Getting images from the entire dataset
+                            target_size=(int(max_size * 2), int(max_size * 2)),  # Size of random crop of canvas
+                            cell_shape=(max_size, max_size),  # Space allocated for each cell
+                            fill=AUGMENTATION_BG_COLOR,
+                        ),
+                        # NOTE: Affine before LongestMaxSize to not lose resolution in case of zooming
+                        A.Affine(
+                            p=1.0,
+                            rotate=0,
+                            translate_percent=(-0.35, 0.35),
+                            scale=(0.95, 1.6),  # Not much zoom out as already zoomed out by mosaic
+                            shear=0,
+                            fill=AUGMENTATION_BG_COLOR,
+                        ),
+                    ],
+                ),
+                second=A.Affine(  # No Mosaic
+                    p=1.0,
+                    rotate=0,
+                    translate_percent=(-0.1, 0.1),
+                    scale=(0.5, 1.5),  # Not much zoom out as already zoomed out by mosaic
+                    shear=0,
+                    fill=AUGMENTATION_BG_COLOR,
+                ),
+                p=1.0,  # probability of using Mosaic
             ),
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size, fill=AUGMENTATION_BG_COLOR),
