@@ -67,7 +67,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
                     shear=0,
                     fill=AUGMENTATION_BG_COLOR,
                 ),
-                p=1.0,  # probability of using Mosaic
+                p=0.0,  # probability of using Mosaic
             ),
             # -----------------  RESIZE TRANSFORMS ------------------
             A.LongestMaxSize(max_size=max_size),
