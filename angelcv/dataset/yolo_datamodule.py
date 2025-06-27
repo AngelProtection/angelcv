@@ -224,12 +224,12 @@ class YOLODataModule(L.LightningDataModule):
         if self.test_dir and not self.test_dir.exists():
             raise FileNotFoundError(f"Test directory not found: {self.test_dir}")
 
-    def setup(self, stage: Literal["train", "val", "test"] | None = None) -> None:
+    def setup(self, stage: Literal["train", "val", "test", "all"] = "all") -> None:
         """
         Set up the train, validation, and test datasets.
         This hook is called on every process (for distributed setups).
         """
-        if stage in (None, "train"):
+        if stage in ("all", "train"):
             self.train_dataset = YOLODetectionDataset(
                 images_dir=self.train_dir,
                 labels_dir=self.train_labels_dir,
@@ -237,7 +237,8 @@ class YOLODataModule(L.LightningDataModule):
                 config=self.config,
                 stage="train",
             )
-        if stage in (None, "train", "val"):
+
+        if stage in ("all", "train", "val"):
             self.val_dataset = YOLODetectionDataset(
                 images_dir=self.val_dir,
                 labels_dir=self.val_labels_dir,
@@ -246,14 +247,17 @@ class YOLODataModule(L.LightningDataModule):
                 stage="val",
             )
 
-        if stage in (None, "test") and self.test_dir is not None:
-            self.test_dataset = YOLODetectionDataset(
-                images_dir=self.test_dir,
-                labels_dir=self.test_labels_dir,
-                classes=self.config.dataset.names,
-                config=self.config,
-                stage="test",
-            )
+        if stage in ("all", "test"):
+            if self.test_dir is None:
+                logger.warning("Test directory not found, skipping test dataset creation.")
+            else:
+                self.test_dataset = YOLODetectionDataset(
+                    images_dir=self.test_dir,
+                    labels_dir=self.test_labels_dir,
+                    classes=self.config.dataset.names,
+                    config=self.config,
+                    stage="test",
+                )
 
     def _collate_fn(self, batch: list[tuple[torch.Tensor, list[dict]]]) -> dict[str, torch.Tensor]:
         """

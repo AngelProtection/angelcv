@@ -236,25 +236,19 @@ class CocoDataModule(L.LightningDataModule):
             if download_dir.exists():
                 shutil.rmtree(download_dir)
 
-    def setup(self, stage: Literal["train", "val", "test"] | None = None) -> None:
+    def setup(self, stage: Literal["train", "val", "test", "all"] = "all") -> None:
         """
-        Setup train, validation, and test datasets.
-
-        Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when you
-        need to build models dynamically or adjust something about them. This hook is called on every process when
-        using DDP.
-
-        Args:
-            stage (str | None): "fit", "test", "validate" or "predict" stage
+        Set up the train, validation, and test datasets.
+        This hook is called on every process (for distributed setups).
         """
         # Splitting logic based on stage
-        if stage in (None, "train"):
+        if stage in ("all", "train"):
             self.train_dataset = self._create_dataset("train")
 
-        if stage in (None, "train", "val"):
+        if stage in ("all", "train", "val"):
             self.val_dataset = self._create_dataset("val")
 
-        if stage in (None, "test"):
+        if stage in ("all", "test"):
             self.test_dataset = self._create_dataset("test")
 
     def _create_dataset(self, split: Literal["train", "val", "test"]) -> CocoDetection:
