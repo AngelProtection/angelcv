@@ -36,7 +36,7 @@ class CocoDetection(Dataset):
         root: str | Path,
         ann_file: str | Path,
         config: Config,
-        stage: Literal["train", "val", "test"],
+        split: Literal["train", "val", "test"],
     ) -> None:
         self.root = Path(root)
         self.coco = COCO(str(ann_file))
@@ -45,12 +45,12 @@ class CocoDetection(Dataset):
         self.transforms = None
 
         # Create transforms
-        if stage == "train":
+        if split == "train":
             self.transforms = build_training_transforms(config=self.config, dataset=self)
-        elif stage in ("val", "test"):
+        elif split in ("val", "test"):
             self.transforms = build_val_transforms(config=self.config)
         else:
-            raise ValueError(f"Invalid stage: {stage}")
+            raise ValueError(f"Invalid split: {split}")
 
         # Create category ID mapping
         self.cat_mapping = {cat: idx for idx, cat in enumerate(self.coco.getCatIds())}
@@ -237,7 +237,8 @@ class CocoDataModule(L.LightningDataModule):
                 shutil.rmtree(download_dir)
 
     def setup(self, stage: str | None = None) -> None:
-        """Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when you
+        """
+        Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when you
         need to build models dynamically or adjust something about them. This hook is called on every process when
         using DDP.
 
@@ -270,7 +271,7 @@ class CocoDataModule(L.LightningDataModule):
                 root=self.data_dir / f"{split}2017",
                 ann_file=self.data_dir / ann_file,
                 config=self.config,
-                stage=split,
+                split=split,
             )
         else:
             raise ValueError(f"Invalid task: {self.task}")

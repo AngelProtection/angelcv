@@ -33,7 +33,7 @@ class YOLODetectionDataset(Dataset):
         labels_dir: str | Path,
         classes: dict[int, str],
         config: Config,
-        stage: Literal["train", "val", "test"],
+        split: Literal["train", "val", "test"],
     ) -> None:
         self.images_dir = Path(images_dir)
         self.labels_dir = Path(labels_dir)
@@ -46,12 +46,12 @@ class YOLODetectionDataset(Dataset):
         self.image_files = sorted([p for p in self.images_dir.iterdir() if p.suffix.lower() in allowed_exts])
 
         # Create transforms
-        if stage == "train":
+        if split == "train":
             self.transforms = build_training_transforms(config=self.config, dataset=self)
-        elif stage in ("val", "test"):
+        elif split in ("val", "test"):
             self.transforms = build_val_transforms(config=self.config)
         else:
-            raise ValueError(f"Invalid stage: {stage}")
+            raise ValueError(f"Invalid split: {split}")
 
     def __len__(self) -> int:
         return len(self.image_files)
@@ -239,14 +239,14 @@ class YOLODataModule(L.LightningDataModule):
                 labels_dir=self.train_labels_dir,
                 classes=self.config.dataset.names,
                 config=self.config,
-                stage="train",
+                split="train",
             )
             self.val_dataset = YOLODetectionDataset(
                 images_dir=self.val_dir,
                 labels_dir=self.val_labels_dir,
                 classes=self.config.dataset.names,
                 config=self.config,
-                stage="val",
+                split="val",
             )
 
         if stage in (None, "test"):
@@ -258,7 +258,7 @@ class YOLODataModule(L.LightningDataModule):
                     labels_dir=self.test_labels_dir,
                     classes=self.config.dataset.names,
                     config=self.config,
-                    stage="test",
+                    split="test",
                 )
 
     def _collate_fn(self, batch: list[tuple[torch.Tensor, list[dict]]]) -> dict[str, torch.Tensor]:
