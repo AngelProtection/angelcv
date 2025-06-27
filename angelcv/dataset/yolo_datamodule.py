@@ -224,12 +224,12 @@ class YOLODataModule(L.LightningDataModule):
         if self.test_dir and not self.test_dir.exists():
             raise FileNotFoundError(f"Test directory not found: {self.test_dir}")
 
-    def setup(self, stage: str | None = None) -> None:
+    def setup(self, stage: Literal["train", "val", "test"] | None = None) -> None:
         """
         Set up the train, validation, and test datasets.
         This hook is called on every process (for distributed setups).
         """
-        if stage in (None, "fit"):
+        if stage in (None, "train"):
             self.train_dataset = YOLODetectionDataset(
                 images_dir=self.train_dir,
                 labels_dir=self.train_labels_dir,
@@ -237,6 +237,7 @@ class YOLODataModule(L.LightningDataModule):
                 config=self.config,
                 stage="train",
             )
+        if stage in (None, "train", "val"):
             self.val_dataset = YOLODetectionDataset(
                 images_dir=self.val_dir,
                 labels_dir=self.val_labels_dir,

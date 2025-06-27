@@ -236,7 +236,7 @@ class CocoDataModule(L.LightningDataModule):
             if download_dir.exists():
                 shutil.rmtree(download_dir)
 
-    def setup(self, stage: str | None = None) -> None:
+    def setup(self, stage: Literal["train", "val", "test"] | None = None) -> None:
         """
         Setup train, validation, and test datasets.
 
@@ -248,8 +248,10 @@ class CocoDataModule(L.LightningDataModule):
             stage (str | None): "fit", "test", "validate" or "predict" stage
         """
         # Splitting logic based on stage
-        if stage in (None, "fit"):
+        if stage in (None, "train"):
             self.train_dataset = self._create_dataset("train")
+
+        if stage in (None, "train", "val"):
             self.val_dataset = self._create_dataset("val")
 
         if stage in (None, "test"):
