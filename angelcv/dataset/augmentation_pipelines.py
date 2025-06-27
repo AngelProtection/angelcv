@@ -167,7 +167,7 @@ if __name__ == "__main__":
     # Create CocoDataModule with default transforms (val transforms have no augmentation)
     datamodule = CocoDataModule(config)
     datamodule.prepare_data()
-    datamodule.setup()
+    datamodule.setup("val")  # only create val dataset
 
     # Use validation loader (which has no augmentations)
     val_loader = datamodule.val_dataloader()
