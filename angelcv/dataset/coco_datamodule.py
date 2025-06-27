@@ -257,12 +257,12 @@ class CocoDataModule(L.LightningDataModule):
         if stage in (None, "test"):
             self.test_dataset = self._create_dataset("test")
 
-    def _create_dataset(self, split: str) -> CocoDetection:
+    def _create_dataset(self, split: Literal["train", "val", "test"]) -> CocoDetection:
         """
         Create dataset for given split.
 
         Args:
-            split (str): train, val, or test
+            split (Literal["train", "val", "test"]): train, val, or test
 
         Returns:
             CocoDetection: COCO dataset for specified split
