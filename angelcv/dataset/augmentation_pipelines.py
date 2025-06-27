@@ -32,6 +32,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
     # TODO [MID]: set the probabilities and key parameters from the config
     return A.Compose(
         transforms=[
+            # -----------------  MOSAIC TRANSFORMS ------------------
             A.OneOrOther(
                 first=A.Sequential(  # MosaicFromDatase + Affine
                     p=1.0,
@@ -68,6 +69,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
                 ),
                 p=1.0,  # probability of using Mosaic
             ),
+            # -----------------  RESIZE TRANSFORMS ------------------
             A.LongestMaxSize(max_size=max_size),
             A.PadIfNeeded(min_height=max_size, min_width=max_size, fill=AUGMENTATION_BG_COLOR),
             # -------------- TRANSFORMS WITHOUT RESIZE --------------
