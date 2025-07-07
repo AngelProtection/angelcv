@@ -236,7 +236,7 @@ class CocoDataModule(L.LightningDataModule):
             if download_dir.exists():
                 shutil.rmtree(download_dir)
 
-    def setup(self, stage: str | None = None) -> None:
+    def setup(self, stage: Literal["fit", "validate", "test", "predict"] | None = None) -> None:
         """
         Called at the beginning of fit (train + validate), validate, test, or predict. This is a good hook when you
         need to build models dynamically or adjust something about them. This hook is called on every process when
@@ -248,6 +248,8 @@ class CocoDataModule(L.LightningDataModule):
         # Splitting logic based on stage
         if stage in (None, "fit"):
             self.train_dataset = self._create_dataset("train")
+
+        if stage in (None, "validate", "fit"):
             self.val_dataset = self._create_dataset("val")
 
         if stage in (None, "test"):
