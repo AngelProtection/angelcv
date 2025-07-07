@@ -95,7 +95,10 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
             A.Normalize(mean=0, std=1, max_pixel_value=255),  # This divides by 255
             ToTensorV2(),
         ],
-        bbox_params=A.BboxParams(format="albumentations", label_fields=["labels"]),
+        # NOTE: min_* to filter out tiny boxes, since those are not useful for training
+        bbox_params=A.BboxParams(
+            format="albumentations", label_fields=["labels"], min_width=4, min_height=4, min_area=20
+        ),
     )
 
 
