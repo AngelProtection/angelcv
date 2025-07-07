@@ -209,7 +209,10 @@ class AuxiliaryDetectionLoss:
 
         # NOTE: https://arxiv.org/pdf/2108.07755 shows that alpha=0.5 is best for mAP@50
         self.tal = TaskAlignedAssigner(
-            topk=tal_topk, num_classes=self.num_classes, alpha=self.config.train.loss.matcher.tal_alpha
+            topk=tal_topk,
+            alpha=self.config.train.loss.matcher.tal_alpha,
+            beta=self.config.train.loss.matcher.tal_beta,
+            num_classes=self.num_classes,
         )
         self.bce_loss = nn.BCEWithLogitsLoss(reduction="none")
         self.iou_loss = IouLoss()
