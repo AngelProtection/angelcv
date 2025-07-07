@@ -135,6 +135,11 @@ if __name__ == "__main__":
     from angelcv.dataset.coco_datamodule import CocoDataModule
     from angelcv.utils.annotation_utils import generate_distinct_colors
 
+    # Parameters to control the script's output
+    PLOT_IMAGES = False  # Set to True to display images with bounding boxes
+    PRINT_BBOXES = True  # Set to True to print bounding box details to the terminal
+    SMALL_BBOX_AREA_THRESHOLD = 5 * 5  # Area in pixels to trigger a warning
+
     def draw_bboxes_on_image(image_tensor, boxes_tensor, labels_tensor, colors):
         """Draw bounding boxes on a single image tensor."""
         # Convert tensor to numpy (C, H, W) -> (H, W, C)
@@ -183,7 +188,7 @@ if __name__ == "__main__":
     num_classes = len(config.dataset.names)
     colors = generate_distinct_colors(num_classes)
 
-    n_samples = 50
+    n_samples = 9e9
     for i, batch in enumerate(val_loader):
         images_original = batch["images"]  # Shape: (B, C, H, W) - no augmentations applied
         boxes_original = batch["boxes"]  # Shape: (B, max_boxes, 4)
@@ -201,6 +206,7 @@ if __name__ == "__main__":
 
         for img_idx in range(images_numpy.shape[0]):
             img = images_numpy[img_idx]  # Shape: (H, W, C)
+            h_orig, w_orig, _ = img.shape
 
             # Get original bboxes and labels for this image (filter out padding)
             orig_boxes = boxes_original[img_idx]
@@ -208,14 +214,29 @@ if __name__ == "__main__":
 
             # Filter out padding (boxes with all zeros)
             valid_mask = torch.any(orig_boxes != 0, dim=1)
-            valid_boxes = orig_boxes[valid_mask].cpu().numpy()
+            valid_boxes = orig_boxes[valid_mask]
             valid_labels = orig_labels[valid_mask].cpu().numpy()
 
             # Apply augmentations with bboxes
-            augmented = augmentation_transforms(image=img, bboxes=valid_boxes, labels=valid_labels)
+            augmented = augmentation_transforms(image=img, bboxes=valid_boxes.cpu().numpy(), labels=valid_labels)
             augmented_img = augmented["image"]  # This will be a tensor
             augmented_boxes = torch.tensor(augmented["bboxes"])
             augmented_labels = torch.tensor(augmented["labels"])
+
+            if PRINT_BBOXES and len(augmented_boxes) > 0:
+                _, h_aug, w_aug = augmented_img.shape
+                print(f"--- Augmented Image {img_idx} (shape: {h_aug}x{w_aug}) ---")
+                for j, box in enumerate(augmented_boxes):
+                    x1, y1, x2, y2 = box.tolist()
+                    abs_x1, abs_y1, abs_x2, abs_y2 = x1 * w_aug, y1 * h_aug, x2 * w_aug, y2 * h_aug
+                    area = (abs_x2 - abs_x1) * (abs_y2 - abs_y1)
+                    print(
+                        f"  Box {j}: [x1={abs_x1:.1f}, y1={abs_y1:.1f}, x2={abs_x2:.1f}, y2={abs_y2:.1f}], Area: {area:.1f}"
+                    )
+                    width = abs_x2 - abs_x1
+                    height = abs_y2 - abs_y2
+                    if area < SMALL_BBOX_AREA_THRESHOLD:
+                        print(f"  [WARNING] Augmented box is very small, width {width:.1f}, height {height:.1f}")
 
             augmented_images.append(augmented_img)
             augmented_boxes_list.append(augmented_boxes)
@@ -255,22 +276,23 @@ if __name__ == "__main__":
         images_augmented_with_boxes = torch.stack(images_augmented_with_boxes)
 
         # Create side-by-side comparison
-        fig, axes = plt.subplots(1, 2, figsize=(15, 10))
+        if PLOT_IMAGES:
+            fig, axes = plt.subplots(1, 2, figsize=(15, 10))
 
-        # Original images grid with bboxes (from validation set - no augmentation)
-        grid_original = vutils.make_grid(images_original_with_boxes, nrow=4, normalize=True, scale_each=True)
-        axes[0].imshow(grid_original.permute(1, 2, 0).cpu().numpy())
-        axes[0].set_title(f"Batch {i} - Original (Validation - No Augmentation) - shape: {images_original.shape}")
-        axes[0].axis("off")
+            # Original images grid with bboxes (from validation set - no augmentation)
+            grid_original = vutils.make_grid(images_original_with_boxes, nrow=4, normalize=True, scale_each=True)
+            axes[0].imshow(grid_original.permute(1, 2, 0).cpu().numpy())
+            axes[0].set_title(f"Batch {i} - Original (Validation - No Augmentation) - shape: {images_original.shape}")
+            axes[0].axis("off")
 
-        # Augmented images grid with bboxes (manually applied training augmentations)
-        grid_augmented = vutils.make_grid(images_augmented_with_boxes, nrow=4, normalize=True, scale_each=True)
-        axes[1].imshow(grid_augmented.permute(1, 2, 0).cpu().numpy())
-        axes[1].set_title(f"Batch {i} - With Training Augmentation - shape: {images_augmented.shape}")
-        axes[1].axis("off")
+            # Augmented images grid with bboxes (manually applied training augmentations)
+            grid_augmented = vutils.make_grid(images_augmented_with_boxes, nrow=4, normalize=True, scale_each=True)
+            axes[1].imshow(grid_augmented.permute(1, 2, 0).cpu().numpy())
+            axes[1].set_title(f"Batch {i} - With Training Augmentation - shape: {images_augmented.shape}")
+            axes[1].axis("off")
 
-        plt.tight_layout()
-        plt.show()
+            plt.tight_layout()
+            plt.show()
 
         if i >= n_samples:
             break
