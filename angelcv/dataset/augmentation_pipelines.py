@@ -234,7 +234,8 @@ if __name__ == "__main__":
                     abs_x1, abs_y1, abs_x2, abs_y2 = x1 * w_aug, y1 * h_aug, x2 * w_aug, y2 * h_aug
                     area = (abs_x2 - abs_x1) * (abs_y2 - abs_y1)
                     print(
-                        f"  Box {j}: [x1={abs_x1:.1f}, y1={abs_y1:.1f}, x2={abs_x2:.1f}, y2={abs_y2:.1f}], Area: {area:.1f}"
+                        f"  Box {j}: [x1={abs_x1:.1f}, y1={abs_y1:.1f}, x2={abs_x2:.1f}, y2={abs_y2:.1f}], "
+                        f"Area: {area:.1f}"
                     )
                     width = abs_x2 - abs_x1
                     height = abs_y2 - abs_y2
