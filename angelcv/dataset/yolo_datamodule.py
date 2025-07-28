@@ -168,10 +168,7 @@ class YOLODataModule(L.LightningDataModule):
     subdirectory naming.
     """
 
-    def __init__(
-        self,
-        config: Config,
-    ) -> None:
+    def __init__(self, config: Config) -> None:
         super().__init__()
 
         # Store the config
