@@ -23,6 +23,7 @@ from angelcv.dataset.coco_datamodule import CocoDataModule
 from angelcv.dataset.yolo_datamodule import YOLODataModule
 from angelcv.interface.inference_result import InferenceResult
 from angelcv.model.yolo import YoloDetectionModel
+from angelcv.tools.ema import EMACallback
 from angelcv.utils.logging_manager import get_logger, set_experiment_dir
 from angelcv.utils.path_utils import CHECKPOINT_FILE_EXTENSIONS, resolve_file_path
 from angelcv.utils.source_utils import load_images, preprocess_for_inference
@@ -260,6 +261,7 @@ class ObjectDetectionModel:
         batch_size: int = None,
         num_workers: int = None,
         patience: int = 0,
+        use_ema: bool = True,
         **kwargs,  # everything available in Lightning Trainer
     ) -> dict[str, Any]:
         """
@@ -271,6 +273,7 @@ class ObjectDetectionModel:
             batch_size: Batch size for training.
             num_workers: Number of worker threads for data loading.
             patience: Number of epochs with worse validation loss to wait before stopping training (0=disabled).
+            use_ema: Whether to use Exponential Moving Average (EMA) for model weights.
 
             accelerator: Supports passing different accelerator types ("cpu", "gpu", "tpu", "hpu", "mps", "auto")
             devices:The devices to use. Can be set to a positive number (int or str), a sequence of device indices
@@ -359,6 +362,11 @@ class ObjectDetectionModel:
             train_callbacks.append(
                 EarlyStopping(monitor="val_map", mode="max", patience=self.model.config.train.patience)
             )
+
+        # Add EMA callback if enabled
+        if use_ema:
+            train_callbacks.append(EMACallback())
+            logger.info("EMA callback enabled.")
 
         # Add custom callbacks if provided
         if "callbacks" in kwargs:

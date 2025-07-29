@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["angelcv","angelcv*"]
+include = ["angelcv", "angelcv*"]
 
 [tool.setuptools.package-data]
 "angelcv" = ["**/*.yaml"]
@@ -19,13 +19,19 @@ description = "Train and inference for Computer Vision models made easy."
 readme = "README.md"
 requires-python = ">=3.9,<3.13" # torchvision no 3.13 yet
 license = { file = "LICENSE" }
-keywords = ["computer-vision", "deep-learning", "machine-learning", "AI", "ML", "DL", "YOLO", "YOLOv10", "AngelCV"]
-authors = [
-    { name = "Iu Ayala", email = "iu.ayala@gradientinsight.com" }
+keywords = [
+    "computer-vision",
+    "deep-learning",
+    "machine-learning",
+    "AI",
+    "ML",
+    "DL",
+    "YOLO",
+    "YOLOv10",
+    "AngelCV",
 ]
-maintainers = [
-  { name = "Iu Ayala", email = "iu.ayala@gradientinsight.com" },
-]
+authors = [{ name = "Iu Ayala", email = "iu.ayala@gradientinsight.com" }]
+maintainers = [{ name = "Iu Ayala", email = "iu.ayala@gradientinsight.com" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: Apache Software License",
@@ -49,6 +55,7 @@ dependencies = [
     "albumentations>=2.0.4",
     "boto3>=1.37.3",
     "einops>=0.8.1",
+    "ema-pytorch>=0.7.7",
     "lightning>=2.5.0.post0",
     "matplotlib>=3.9.4",
     "numpy>=2.0.2",
@@ -60,7 +67,7 @@ dependencies = [
     "psutil>=7.0.0",
     "py-cpuinfo>=9.0.0",
     "pycocotools>=2.0.8",
-    "pyqt5>=5.15.11", # for matplotlib backend
+    "pyqt5>=5.15.11",           # for matplotlib backend
     "pyyaml>=6.0.2",
     "requests>=2.32.3",
     "rich>=13.9.4",
@@ -74,9 +81,7 @@ dependencies = [
 
 # Optional dependencies
 [dependency-groups]
-dev = [
-    "mkdocs-material>=9.6.14",
-]
+dev = ["mkdocs-material>=9.6.14"]
 
 # ------------------------ TOOLS ------------------------
 [tool.ruff]
