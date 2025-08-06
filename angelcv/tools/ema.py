@@ -63,7 +63,18 @@ class EMACallback(Callback):
         Updates the EMA model after each training batch.
         """
         if self.ema_model is not None:
+            # EMA regular update - helps model to generalize encouraing flat minima,
+            # but it may hurt the final performance and stagnate optimization
             self.ema_model.update()
+
+    def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+        """
+        Swaps the model weights with the EMA weights after each epoch.
+        """
+        if self.ema_model is not None:
+            # SEMA update: https://arxiv.org/pdf/2402.09240
+            # After each epoch switch the original model weights to the EMA weights
+            self.ema_model.update_model_with_ema()
 
     def on_validation_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """
