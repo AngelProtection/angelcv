@@ -67,6 +67,7 @@ class EMACallback(Callback):
             # but it may hurt the final performance and stagnate optimization
             self.ema_model.update()
 
+    # NOTE: Used only for SEMA
     def on_train_epoch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         """
         Swaps the model weights with the EMA weights after each epoch.
@@ -76,41 +77,42 @@ class EMACallback(Callback):
             # After each epoch switch the original model weights to the EMA weights
             self.ema_model.update_model_with_ema()
 
-    def on_validation_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        """
-        Swaps the model weights with the EMA weights before validation.
-        """
-        self._swap_model_weights(pl_module)
+    # NOTE: the code below was for EMA
+    # def on_validation_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    #     """
+    #     Swaps the model weights with the EMA weights before validation.
+    #     """
+    #     self._swap_model_weights(pl_module)
 
-    def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        """
-        Swaps the EMA weights back to the original model weights after validation.
-        """
-        self._swap_model_weights(pl_module, restore=True)
+    # def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    #     """
+    #     Swaps the EMA weights back to the original model weights after validation.
+    #     """
+    #     self._swap_model_weights(pl_module, restore=True)
 
-    def on_test_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        """
-        Swaps the model weights with the EMA weights before testing.
-        """
-        self._swap_model_weights(pl_module)
+    # def on_test_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    #     """
+    #     Swaps the model weights with the EMA weights before testing.
+    #     """
+    #     self._swap_model_weights(pl_module)
 
-    def on_test_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        """
-        Swaps the EMA weights back to the original model weights after testing.
-        """
-        self._swap_model_weights(pl_module, restore=True)
+    # def on_test_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    #     """
+    #     Swaps the EMA weights back to the original model weights after testing.
+    #     """
+    #     self._swap_model_weights(pl_module, restore=True)
 
-    def on_predict_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        """
-        Swaps the model weights with the EMA weights before prediction.
-        """
-        self._swap_model_weights(pl_module)
+    # def on_predict_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    #     """
+    #     Swaps the model weights with the EMA weights before prediction.
+    #     """
+    #     self._swap_model_weights(pl_module)
 
-    def on_predict_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        """
-        Swaps the EMA weights back to the original model weights after prediction.
-        """
-        self._swap_model_weights(pl_module, restore=True)
+    # def on_predict_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    #     """
+    #     Swaps the EMA weights back to the original model weights after prediction.
+    #     """
+    #     self._swap_model_weights(pl_module, restore=True)
 
     def _swap_model_weights(self, pl_module: pl.LightningModule, restore: bool = False):
         """
