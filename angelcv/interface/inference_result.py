@@ -204,7 +204,7 @@ class InferenceResult:
         )
 
     def __str__(self) -> str:
-        return f"InferenceResults(model_output={self.model_output})"
+        return f"InferenceResult(model_output={self.model_output})"
 
     @property
     def class_labels(self) -> list[str]:
