@@ -306,6 +306,8 @@ class ObjectDetectionModel:
         # TODO [MID]: FIX THIS, it shouldn't be required to reassign to self.model.config, probably the issue comes
         # from the ConfigManager.set_config(...)
         self.model.config = ConfigManager.upsert_config(dataset_file=str(dataset_path))
+        # Sync updated config into Lightning's hyperparameters so checkpoints carry the update config
+        self.model.hparams.config = self.model.config
 
         # Get the class names from the dataset config
         new_num_classes = len(self.model.config.dataset.names)
