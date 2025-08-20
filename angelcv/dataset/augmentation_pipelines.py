@@ -67,7 +67,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
                     shear=0,
                     fill=AUGMENTATION_BG_COLOR,
                 ),
-                p=0.0,  # probability of using Mosaic
+                p=1.0,  # probability of using Mosaic
             ),
             # -----------------  RESIZE TRANSFORMS ------------------
             A.LongestMaxSize(max_size=max_size),
@@ -76,7 +76,7 @@ def build_training_transforms(config: Config, dataset: Dataset = None) -> Callab
             # NOTE: high val_shift_limit range to simulate different lighting conditions
             # NOTE: high values of sat_shift_limit range introduce artifacts in the images
             A.HueSaturationValue(
-                p=0.8, hue_shift_limit=(-20, 20), sat_shift_limit=(-50, 30), val_shift_limit=(-70, 70)
+                p=0.8, hue_shift_limit=(-15, 15), sat_shift_limit=(-40, 25), val_shift_limit=(-60, 60)
             ),
             A.OneOf(
                 [
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     from angelcv.utils.annotation_utils import generate_distinct_colors
 
     # Parameters to control the script's output
-    PLOT_IMAGES = False  # Set to True to display images with bounding boxes
+    PLOT_IMAGES = True  # Set to True to display images with bounding boxes
     PRINT_BBOXES = True  # Set to True to print bounding box details to the terminal
     SMALL_BBOX_AREA_THRESHOLD = 5 * 5  # Area in pixels to trigger a warning
 
