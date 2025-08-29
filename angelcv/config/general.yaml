@@ -34,7 +34,7 @@ train:
   optimizer:
     type: AdamW # currently unused
     args:
-      max_lr: 0.005
+      max_lr: 0.01
       weight_decay: 0.00005
       momentum: 0.937
 
