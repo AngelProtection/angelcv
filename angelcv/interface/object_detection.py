@@ -382,8 +382,10 @@ class ObjectDetectionModel:
         trainer_kwargs = {
             "logger": tb_logger,
             "deterministic": False,
+            "precision": "16-mixed",  # Reduce memory usage (larger batch size)
             "gradient_clip_val": 10.0,  # NOTE: prevent exploding gradients
             "gradient_clip_algorithm": "norm",
+            # NOTE: this goes last to override the default parameters
             **kwargs,  # All the Trainer arguments, that come from function arguments
         }
 
